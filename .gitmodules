@@ -1,0 +1,3 @@
+[submodule "quadcopter_with_PID_controller"]
+	path = quadcopter_with_PID_controller
+	url = git@github.com:brianwade1/quadcopter_with_PID_controller.git
