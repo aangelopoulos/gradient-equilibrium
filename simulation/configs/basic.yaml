@@ -1,0 +1,4 @@
+defaults:
+  - /experiment/default
+
+experiment_name: basic
