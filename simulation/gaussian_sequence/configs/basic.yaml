@@ -1,0 +1,9 @@
+defaults:
+  - /experiment/default
+
+experiment_name: basic
+
+hydra:
+  sweeper:
+    params:
+      experiment.optimizer.lr: 0.01,0.1

@@ -48,6 +48,7 @@ class SimpleModel(nn.Module):
 
 @hydra.main(config_path='configs', config_name='basic')
 def main(cfg):
+    pdb.set_trace()
 # Create the synthetic dataset
     dataset = SyntheticDataset(size=cfg.experiment.dataset.size, distribution_shift_speed=cfg.experiment.dataset.distribution_shift_speed, d=cfg.experiment.dataset.d)
 

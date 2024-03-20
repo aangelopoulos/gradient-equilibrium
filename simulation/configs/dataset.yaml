@@ -1,8 +1,0 @@
-defaults:
-  - _self_
-
-dataset:
-  size: 1000
-  distribution_shift_speed: 0.0  # This can be overridden
-  d: 3
-
