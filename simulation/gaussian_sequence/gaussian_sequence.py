@@ -1,7 +1,7 @@
 import os
 # Import from ../core
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'core'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..', 'core'))
 import numpy as np
 import torch
 import torch.nn as nn
@@ -46,9 +46,8 @@ class SimpleModel(nn.Module):
         # Model prediction is just the value of theta
         return self.theta[None,:].expand(x_t.shape[0],-1)
 
-@hydra.main(config_path='configs', config_name='basic')
+@hydra.main(config_path='configs', config_name='basic', version_base="1.3.2")
 def main(cfg):
-    pdb.set_trace()
 # Create the synthetic dataset
     dataset = SyntheticDataset(size=cfg.experiment.dataset.size, distribution_shift_speed=cfg.experiment.dataset.distribution_shift_speed, d=cfg.experiment.dataset.d)
 
