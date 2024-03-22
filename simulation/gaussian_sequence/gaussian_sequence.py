@@ -8,17 +8,28 @@ import torch.nn as nn
 import pdb
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
 from algorithms import VGD
 import hydra
+from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
+
+def set_randomness(seed=0):
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 # Create a synthetic dataset
 class SyntheticDataset(torch.utils.data.Dataset):
-    def __init__(self, size, distribution_shift_speed, d):
+    def __init__(self, size, distribution_shift_speed, d, seed):
         self.size = size
         self.distribution_shift_speed = distribution_shift_speed
         self.current_trend = 0.0
         self.d = d
+        set_randomness(seed=seed)
 
         # Create synthetic data with a slow distribution shift
         self.data = []
@@ -48,8 +59,12 @@ class SimpleModel(nn.Module):
 
 @hydra.main(config_path='configs', config_name='basic', version_base="1.3.2")
 def main(cfg):
+# Get job ID
+    hydra_cfg = HydraConfig.get()
+    job_id = hydra_cfg.job.id
+
 # Create the synthetic dataset
-    dataset = SyntheticDataset(size=cfg.experiment.dataset.size, distribution_shift_speed=cfg.experiment.dataset.distribution_shift_speed, d=cfg.experiment.dataset.d)
+    dataset = SyntheticDataset(size=cfg.experiment.dataset.size, distribution_shift_speed=cfg.experiment.dataset.distribution_shift_speed, d=cfg.experiment.dataset.d, seed=0)
 
 # Initialize the simple model
     model = SimpleModel(torch.tensor(cfg.experiment.model.theta0))
@@ -64,57 +79,33 @@ def main(cfg):
     loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True)
 
 # Training loop (simplified for demonstration)
-    thetas = torch.zeros(cfg.experiment.dataset.size, cfg.experiment.dataset.d)
-    ys = torch.zeros(cfg.experiment.dataset.size, cfg.experiment.dataset.d)
-    gradients = torch.zeros(cfg.experiment.dataset.size, cfg.experiment.dataset.d)
-    norms = torch.zeros(cfg.experiment.dataset.size)
+    thetas = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
+    ys = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
+    gradients = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
+    average_gradients = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
+    thetas[0] = model.theta.detach()
+
     for t, y_t in loader:
         optimizer.zero_grad()
         prediction = model(t.float())
         loss = 0.5*loss_fn(prediction, y_t)
         loss.backward()
-        thetas[t] = model.theta.detach()
+        optimizer.step()
+        thetas[t+1] = model.theta.detach()
         ys[t] = y_t
         gradients[t] = model.theta.grad
-        norms[t] = torch.norm(gradients[:t+1].mean(dim=0))
-        optimizer.step()
+        average_gradients[t] = gradients[:t+1].mean(dim=0)
 
-# Cache the results
+# Cache the thetas, ys, gradients, and norms in a pandas dictionary
     os.makedirs('.cache/' + cfg.experiment_name, exist_ok=True)
-    torch.save(thetas, '.cache/' + cfg.experiment_name + '/thetas.pt')
-    torch.save(ys, '.cache/' + cfg.experiment_name + '/ys.pt')
-    torch.save(gradients, '.cache/' + cfg.experiment_name + '/gradients.pt')
-    torch.save(norms, '.cache/' + cfg.experiment_name + '/norms.pt')
-
-# Plot the results
-    sns.set()
-    sns.set_style("whitegrid")
-    sns.set_context("talk")
-
-# Make plot of the norms
-    t = np.arange(cfg.experiment.dataset.size) + 1
-    plt.plot(t, norms, linewidth=1, label=r'VGD ($\eta = {}$, $\kappa = {}$)'.format(cfg.experiment.optimizer.lr, cfg.experiment.optimizer.viscosity))
-
-# Also plot the theoretical bound
-    plt.plot(t, norms.max()/np.sqrt(t), 'r--', linewidth=1, label='O(1/sqrt(t))')
-    plt.xlabel('Time step')
-    plt.ylabel('Norm of the gradient')
-    plt.ylim(0, 1)
-    plt.tight_layout()
-    plt.legend()
-    os.makedirs('./results/' + cfg.experiment_name, exist_ok=True)
-    plt.savefig('./results/' + cfg.experiment_name + '/norms.pdf')
-
-# Now plot the iterates and y_t values for the first d=2 dimensions
-    plt.figure()
-    plt.plot(thetas[:,0].numpy(), thetas[:,1].numpy(), linewidth=1, label=r'$\theta_t$', alpha=0.5)
-    plt.plot(ys[:,0].numpy(), ys[:,1].numpy(), linewidth=1, label=r'$y_t$', alpha=0.5)
-    plt.xlabel(r'$\theta_{t,1}$')
-    plt.ylabel(r'$\theta_{t,2}$')
-    plt.tight_layout()
-    plt.legend()
-    plt.savefig('./results/' + cfg.experiment_name + '/iterates.pdf')
-
+    df = pd.DataFrame({'theta': thetas.tolist(), 'y': ys.tolist(), 'gradient': gradients.tolist(), 'average_gradient': average_gradients.tolist()})
+    df['lr'] = cfg.experiment.optimizer.lr
+    df['viscosity'] = cfg.experiment.optimizer.viscosity
+    df['distribution_shift_speed'] = cfg.experiment.dataset.distribution_shift_speed
+    df['d'] = cfg.experiment.dataset.d
+    df['size'] = cfg.experiment.dataset.size
+    df['init_norm'] = torch.norm(torch.tensor(cfg.experiment.model.theta0)).item()
+    df.to_pickle('.cache/' + cfg.experiment_name + '/' + job_id + '.pkl')
 
 if __name__ == "__main__":
     main()
