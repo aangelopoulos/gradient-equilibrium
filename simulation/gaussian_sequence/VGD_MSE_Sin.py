@@ -49,54 +49,74 @@ def __(sns):
     return
 
 
-app._unparsable_cell(
-    r"""
+@app.cell
+def __(T, df, np, plt, sns):
     # Make plot of the norms
     kappas_to_plot = [0, 0.1, 0.9]
     etas_to_plot = [0.1, 0.2, 0.5]
     shifts_to_plot = [0, 0.0001, 0.0002, 0.0005]
     theta0 = np.array(df.theta.iloc[0])
     plot_every = 10
-    _fig, _axs = plt.subplots(nrows=len(shifts_to_plot), ncols=len(kappas_to_plot), figsize=(len(kappas_to_plot)*10,5*len(shifts_to_plot)), sharex=\"col\", sharey=\"row\")
+    _fig, _axs = plt.subplots(nrows=len(shifts_to_plot), ncols=len(kappas_to_plot), figsize=(len(kappas_to_plot)*10,5*len(shifts_to_plot)), sharex="col", sharey="row")
     _t = np.arange(T)+1
 
     for _i in range(len(shifts_to_plot)):
         for _j in range(len(kappas_to_plot)):
+            shift = shifts_to_plot[_i]
+            kappa = kappas_to_plot[_j]
             _to_plot = df[
                 df.lr.isin(etas_to_plot) &
-                (df.viscosity==kappas_to_plot[_j]) & 
-                (df.distribution_shift_speed==shifts_to_plot[_i]) & 
+                (df.viscosity==kappa) & 
+                (df.distribution_shift_speed==shift) & 
                 (df.time % plot_every == 0)
-            ].sort_values([\"lr\", \"viscosity\"], ascending=False)
+            ].sort_values(["lr", "viscosity"], ascending=False)
             _lp = sns.lineplot(
                 ax=_axs[_i,_j], 
                 data=_to_plot,
-                x=\"time\", 
-                y=\"norm_avg_grad\", 
-                hue=\"parameters\", 
+                x="time", 
+                y="norm_avg_grad", 
+                hue="parameters", 
                 linewidth=1, 
                 alpha=0.5
             )
 
             # Also plot the theoretical bound
+            c = 10
             alpha_t = beta_t = (1 + kappa)*np.ones_like(_t) # Strong convexity and smoothness
-            b_t = np.linalg.norm(np.array([25,25,25])) + np.log(_t)
-            bound = 2*np.linalg.norm(theta0)/(min(etas_to_plot)*_t) + 
-                    np.sqrt() # TODO! Based on Prop 6.
-            #_lp.plot(_t, 1/np.sqrt(_t), 'k--', linewidth=3, label=r'$\frac{1}{\sqrt{T}}$')
-            _axs[_i,_j].set_ylabel(\"Norm avg grad (drift=\" + str(shifts_to_plot[_i]) + ')')
-            _axs[_i,_j].set_xlabel(\"Time (T)\")
+            trend_max = np.array([25,25,25])
+            max_t = np.linalg.norm(trend_max[None,:] + c*np.log(_t)[:,None], axis=1)
+            r_t = max_t
+            L_t = max_t + kappa*max(etas_to_plot)
+            b_t = np.linalg.norm(trend_max) + c*np.log(_t)
+            min_eta = min(etas_to_plot)
+            bound = 2*np.linalg.norm(theta0)/(min_eta*_t) + \
+                    L_t/_t + \
+                    r_t/(min_eta*_t)
+            _lp.plot(_t[100:], bound[100:], 'k--', linewidth=3, label=r'Bound')
+            _axs[_i,_j].set_ylabel("Norm avg grad (drift=" + str(shifts_to_plot[_i]) + ')')
+            _axs[_i,_j].set_xlabel("Time (T)")
 
     plt.tight_layout()
     plt.gca()
-    """,
-    name="__"
-)
-
-
-@app.cell
-def __():
-    return
+    return (
+        L_t,
+        alpha_t,
+        b_t,
+        beta_t,
+        bound,
+        c,
+        etas_to_plot,
+        kappa,
+        kappas_to_plot,
+        max_t,
+        min_eta,
+        plot_every,
+        r_t,
+        shift,
+        shifts_to_plot,
+        theta0,
+        trend_max,
+    )
 
 
 @app.cell

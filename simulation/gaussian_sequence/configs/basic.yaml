@@ -1,5 +1,6 @@
 defaults:
   - /experiment/default
+  - override hydra/launcher: joblib
   - _self_
 
 experiment_name: basic
