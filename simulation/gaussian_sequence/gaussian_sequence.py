@@ -24,10 +24,9 @@ def set_randomness(seed=0):
 
 # Create a synthetic dataset
 class SyntheticDataset(torch.utils.data.Dataset):
-    def __init__(self, size, distribution_shift_speed, d, seed):
+    def __init__(self, size, trend, d, seed):
         self.size = size
-        self.distribution_shift_speed = distribution_shift_speed
-        self.current_trend = 0.0
+        self.trend = trend # Trend is size x d
         self.d = d
         set_randomness(seed=seed)
 
@@ -35,8 +34,7 @@ class SyntheticDataset(torch.utils.data.Dataset):
         self.data = []
         for i in range(size):
             # Simulate the distribution shift over time
-            self.current_trend += distribution_shift_speed
-            y_t = torch.randn(d) + self.current_trend
+            y_t = torch.randn(d) + self.trend[i]
             self.data.append(y_t)
 
     def __len__(self):
@@ -64,7 +62,14 @@ def main(cfg):
     job_id = hydra_cfg.job.id
 
 # Create the synthetic dataset
-    dataset = SyntheticDataset(size=cfg.experiment.dataset.size, distribution_shift_speed=cfg.experiment.dataset.distribution_shift_speed, d=cfg.experiment.dataset.d, seed=0)
+    if cfg.experiment.dataset.trend_type == 'sinusoidal':
+        rate = torch.arange(cfg.experiment.dataset.size)*2*np.pi * cfg.experiment.dataset.distribution_shift_speed
+        trend = 5*torch.stack([torch.sin(rate), torch.cos(rate), torch.sin(rate)], axis=1) + 20
+    elif cfg.experiment.dataset.trend_type == 'linear':
+        trend = np.log(np.arange(cfg.experiment.dataset.size)+1) * cfg.experiment.dataset.distribution_shift_speed + 2
+    else:
+        raise ValueError('Invalid trend type')
+    dataset = SyntheticDataset(size=cfg.experiment.dataset.size, trend=trend, d=cfg.experiment.dataset.d, seed=0)
 
 # Initialize the simple model
     model = SimpleModel(torch.tensor(cfg.experiment.model.theta0))
@@ -105,6 +110,7 @@ def main(cfg):
     df['d'] = cfg.experiment.dataset.d
     df['size'] = cfg.experiment.dataset.size
     df['init_norm'] = torch.norm(torch.tensor(cfg.experiment.model.theta0)).item()
+    df['trend_type'] = cfg.experiment.dataset.trend_type
     df.to_pickle('.cache/' + cfg.experiment_name + '/' + job_id + '.pkl')
 
 if __name__ == "__main__":
