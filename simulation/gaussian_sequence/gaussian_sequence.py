@@ -32,7 +32,7 @@ class SyntheticDataset(torch.utils.data.Dataset):
         self.data = []
         for i in range(size):
             # Simulate the distribution shift over time
-            y_t = torch.randn(d) + self.trend[i]
+            y_t = torch.clip(torch.randn(d),-5,5) + self.trend[i]
             self.data.append(y_t)
 
     def __len__(self):

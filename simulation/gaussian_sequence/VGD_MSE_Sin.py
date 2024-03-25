@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.3.3"
+__generated_with = "0.3.4"
 app = marimo.App()
 
 
@@ -81,16 +81,23 @@ def __(T, df, np, plt, sns):
             )
 
             # Also plot the theoretical bound
-            c = 10
-            alpha_t = beta_t = (1 + kappa)*np.ones_like(_t) # Strong convexity and smoothness
-            trend_max = np.array([25,25,25])
-            max_t = np.linalg.norm(trend_max[None,:] + c*np.log(_t)[:,None], axis=1)
-            r_t = max_t
-            L_t = max_t + kappa*max(etas_to_plot)
-            b_t = np.linalg.norm(trend_max) + c*np.log(_t)
+            B = np.linalg.norm([30,30,30])
+            delta=0.5
+            r_t = 1/delta*B
             min_eta = min(etas_to_plot)
+            eta_leq = 2*(1-delta)/((1+delta)**2)
+            print(f"Eta smaller than {eta_leq}: {[(eta <= eta_leq) for eta in etas_to_plot]}.")
+            # Below is the generic bound. It's much too loose for quadratic losses.
+            #min_eta = min(etas_to_plot)
+            #max_eta = max(etas_to_plot)
+            #B = np.linalg.norm([30,30,30])
+            #b_t = B
+            #alpha_t = beta_t = 1+kappa
+            #r_t = 1/(2*min_eta*(1+kappa)) + 1
+            #eta_leq = (1+kappa)/(2*(B**2+(1+kappa)**2))
+            #print(f"Eta smaller than {eta_leq}: {[(eta <= eta_leq) for eta in etas_to_plot]}.")
             bound = 2*np.linalg.norm(theta0)/(min_eta*_t) + \
-                    L_t/_t + \
+                    (B+r_t)/_t + \
                     r_t/(min_eta*_t)
             _lp.plot(_t[100:], bound[100:], 'k--', linewidth=3, label=r'Bound')
             _axs[_i,_j].set_ylabel("Norm avg grad (drift=" + str(shifts_to_plot[_i]) + ')')
@@ -99,23 +106,19 @@ def __(T, df, np, plt, sns):
     plt.tight_layout()
     plt.gca()
     return (
-        L_t,
-        alpha_t,
-        b_t,
-        beta_t,
+        B,
         bound,
-        c,
+        delta,
+        eta_leq,
         etas_to_plot,
         kappa,
         kappas_to_plot,
-        max_t,
         min_eta,
         plot_every,
         r_t,
         shift,
         shifts_to_plot,
         theta0,
-        trend_max,
     )
 
 
