@@ -32,12 +32,16 @@ def __(np, os, pd):
     df['y_1'] = df.y.apply(lambda y : y[0])
     df['y_2'] = df.y.apply(lambda y : y[1])
     df['g_1'] = df.average_gradient.apply(lambda g : g[0])
+    theta0 = np.array(df.theta.iloc[0])
+    df['thetaT_theta0'] = df.theta.apply(lambda th : th - theta0)
+    df['oracle_norm_thetaT_theta0'] = df.theta.apply(lambda th : np.linalg.norm(th - theta0))
     T = 10000
     init_norm = 0
     df = df[df.time < T]
     df = df[df.init_norm == init_norm]
     df['normalized_time'] = df['time']/(T-1)
-    return T, df, dfs, experiment, init_norm, trend_type
+    df.norm_avg_grad = df.norm_avg_grad.replace([-np.inf, np.inf], np.nan)
+    return T, df, dfs, experiment, init_norm, theta0, trend_type
 
 
 @app.cell
@@ -52,13 +56,13 @@ def __(sns):
 @app.cell
 def __(T, df, np, plt, sns):
     # Make plot of the norms
-    kappas_to_plot = [0, 0.1, 0.9]
+    kappas_to_plot = [0, 0.1, 0.5]
     etas_to_plot = [0.1, 0.2, 0.5]
     shifts_to_plot = [0, 0.0001, 0.0002, 0.0005]
-    theta0 = np.array(df.theta.iloc[0])
     plot_every = 10
     _fig, _axs = plt.subplots(nrows=len(shifts_to_plot), ncols=len(kappas_to_plot), figsize=(len(kappas_to_plot)*10,5*len(shifts_to_plot)), sharex="col", sharey="row")
     _t = np.arange(T)+1
+    min_eta = min(etas_to_plot)
 
     for _i in range(len(shifts_to_plot)):
         for _j in range(len(kappas_to_plot)):
@@ -76,49 +80,30 @@ def __(T, df, np, plt, sns):
                 x="time", 
                 y="norm_avg_grad", 
                 hue="parameters", 
-                linewidth=1, 
-                alpha=0.5
+                linewidth=3, 
+                alpha=1
             )
-
+            B_theta = np.nan_to_num(_to_plot.oracle_norm_thetaT_theta0,100).max()
+            print(B_theta)
             # Also plot the theoretical bound
-            B = np.linalg.norm([30,30,30])
-            delta=0.5
-            r_t = 1/delta*B
-            min_eta = min(etas_to_plot)
-            eta_leq = 2*(1-delta)/((1+delta)**2)
-            print(f"Eta smaller than {eta_leq}: {[(eta <= eta_leq) for eta in etas_to_plot]}.")
-            # Below is the generic bound. It's much too loose for quadratic losses.
-            #min_eta = min(etas_to_plot)
-            #max_eta = max(etas_to_plot)
-            #B = np.linalg.norm([30,30,30])
-            #b_t = B
-            #alpha_t = beta_t = 1+kappa
-            #r_t = 1/(2*min_eta*(1+kappa)) + 1
-            #eta_leq = (1+kappa)/(2*(B**2+(1+kappa)**2))
-            #print(f"Eta smaller than {eta_leq}: {[(eta <= eta_leq) for eta in etas_to_plot]}.")
-            bound = 2*np.linalg.norm(theta0)/(min_eta*_t) + \
-                    (B+r_t)/_t + \
-                    r_t/(min_eta*_t)
-            _lp.plot(_t[100:], bound[100:], 'k--', linewidth=3, label=r'Bound')
+            bound= B_theta/(min_eta * _t)
+            _lp.plot(_t, bound, 'k--', linewidth=3, label=r'Bound')
             _axs[_i,_j].set_ylabel("Norm avg grad (drift=" + str(shifts_to_plot[_i]) + ')')
             _axs[_i,_j].set_xlabel("Time (T)")
+            _axs[_i,_j].set_ylim([0,2])
 
     plt.tight_layout()
     plt.gca()
     return (
-        B,
+        B_theta,
         bound,
-        delta,
-        eta_leq,
         etas_to_plot,
         kappa,
         kappas_to_plot,
         min_eta,
         plot_every,
-        r_t,
         shift,
         shifts_to_plot,
-        theta0,
     )
 
 

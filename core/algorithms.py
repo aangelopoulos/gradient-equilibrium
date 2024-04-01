@@ -36,6 +36,6 @@ class VGD(torch.optim.Optimizer):
 
                 prev_iterate = self.state[p]['prev_iterate']
                 self.state[p]['prev_iterate'] = p.data
-                p.data = p.data * (1 - group['viscosity']) + prev_iterate * group['viscosity'] - group['lr'] * d_p
+                p.data = (p.data * (1 - group['viscosity'])) + (prev_iterate * group['viscosity']) - group['lr'] * d_p
 
         return loss
