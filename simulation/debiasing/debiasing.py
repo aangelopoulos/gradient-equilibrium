@@ -46,7 +46,7 @@ class SyntheticDataset(torch.utils.data.Dataset):
             g_t[np.random.randint(d)] = 1
             self.g.append(g_t)
             y_t = torch.clip(torch.randn(1),-5,5)
-            yhat_t = y_t + trends[i].dot(g_t)
+            yhat_t = trends[i].dot(g_t)
             self.y.append(y_t)
             self.yhat.append(yhat_t)
 
@@ -78,12 +78,13 @@ def main(cfg):
     if torch.cuda.is_available():
         device = "cuda"
     elif torch.backends.mps.is_available():
-        device = torch.device("mps")
+        device = torch.device("cpu")
 
 # Create the synthetic dataset
-    trends = torch.zeros(cfg.experiment.dataset.size, cfg.experiment.dataset.d)
-    for _d in range(cfg.experiment.dataset.d):
-        trends[:,_d] = 5*_d
+    trends = torch.ones(cfg.experiment.dataset.size, cfg.experiment.dataset.d)*cfg.experiment.dataset.trend_amplitude
+    if cfg.experiment.dataset.trend_period > 0:
+        for _d in range(cfg.experiment.dataset.d):
+            trends[:,_d] = _d*cfg.experiment.dataset.trend_amplitude*torch.sin(torch.linspace(0, cfg.experiment.dataset.size, cfg.experiment.dataset.size)*(2*np.pi)/cfg.experiment.dataset.trend_period) + _d*cfg.experiment.dataset.trend_amplitude
     dataset = SyntheticDataset(size=cfg.experiment.dataset.size, trends=trends, d=cfg.experiment.dataset.d, seed=0)
 
 # Initialize the simple model
@@ -112,7 +113,7 @@ def main(cfg):
     for t, g_t, y_t, yhat_t in loader:
         optimizer.zero_grad()
         prediction = model(g_t.to(device))
-        loss = 0.5*loss_fn(prediction.squeeze(), y_t.to(device).squeeze())
+        loss = 0.5*loss_fn(prediction.squeeze(), (y_t-yhat_t).to(device).squeeze())
         loss.backward()
         optimizer.step()
         thetas[t+1] = model.theta.detach().cpu()
@@ -121,6 +122,7 @@ def main(cfg):
         gs[t] = g_t.detach().cpu()
         gradients[t] = model.theta.grad.detach().cpu()
         average_gradients[t] = gradients[:t+1].mean(dim=0)
+        #print(f"lr={cfg.experiment.optimizer.lr}, viscosity={cfg.experiment.optimizer.viscosity}, t={t}, loss={loss.item()}, theta={model.theta.detach().cpu().numpy()}, gradient={model.theta.grad.detach().cpu().numpy()}")
 
 # Cache the thetas, ys, gradients, and norms in a pandas dictionary
     os.makedirs('.cache/' + cfg.experiment_name, exist_ok=True)
@@ -129,6 +131,8 @@ def main(cfg):
     df['viscosity'] = cfg.experiment.optimizer.viscosity
     df['d'] = cfg.experiment.dataset.d
     df['size'] = cfg.experiment.dataset.size
+    df['trend_period'] = cfg.experiment.dataset.trend_period
+    df['trend_amplitude'] = cfg.experiment.dataset.trend_amplitude
     df.to_pickle('.cache/' + cfg.experiment_name + '/' + job_id + '.pkl')
 
 if __name__ == "__main__":
