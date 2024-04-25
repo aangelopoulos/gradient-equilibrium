@@ -21,23 +21,23 @@ def set_randomness(seed=0):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-def get_adversarial_gradient(theta, By):
+def get_adversarial_gradient(theta, Bg, By):
     # Goal: pick g and y to Try to make the iterates as large as possible
     # Maximize one coordinate of the gradient, g(g^Ttheta-y).
     # If theta[i] is positive, then we want to increase it. If theta[i] is negative, then we want to decrease it.
-    wc_g = torch.zeros(len(theta))
-    wc_y = 0
-    wc_grad = 0
-    for i in range(len(theta)):
-        _g = torch.zeros(len(theta))
-        _g[i] = 1
-        _y = By * torch.sign(theta[i])
-        _grad = torch.dot(_g, theta) - _y
-        if _grad < wc_grad:
-            wc_g = _g
-            wc_y = _y
-            wc_grad = _grad
-    return wc_g, torch.tensor([wc_y]).float()
+    g = torch.zeros(len(theta))
+    if theta[0] >= 0:
+        # Set g to be a vector orthogonal to theta
+        g[0] = Bg
+        g[1] = -g[0]*theta[0]/(theta[1] + 1e-6)
+        y = By
+        # Resulting gradient: -BgBy. Thus, theta[0] will become more positive.
+    else:
+        g[0] = Bg
+        g[1] = -g[0]*theta[0]/(theta[1] + 1e-6)
+        y = -By
+        # Resulting gradient: BgBy. Thus, theta[0] will become more negative.
+    return g, torch.tensor([y]).float()
 
 # OLS model
 class OLSModel(nn.Module):
@@ -81,7 +81,7 @@ def main(cfg):
     for t in range(cfg.experiment.dataset.size):
         optimizer.zero_grad()
         thetas[t] = model.theta.detach().cpu()
-        g_t, y_t = get_adversarial_gradient(thetas[t], cfg.experiment.dataset.By)
+        g_t, y_t = get_adversarial_gradient(thetas[t], cfg.experiment.dataset.Bg, cfg.experiment.dataset.By)
         prediction = model(g_t.to(device))
         loss = 0.5*loss_fn(prediction.squeeze(), y_t.to(device).squeeze())
         loss.backward()
@@ -96,6 +96,7 @@ def main(cfg):
     df = pd.DataFrame({'theta': thetas.tolist(), 'y': ys.tolist(), 'g': gs.tolist(), 'gradient': gradients.tolist(), 'average_gradient': average_gradients.tolist()})
     df['lr'] = cfg.experiment.optimizer.lr
     df['By'] = cfg.experiment.dataset.By
+    df['Bg'] = cfg.experiment.dataset.Bg
     df['viscosity'] = cfg.experiment.optimizer.viscosity
     df['d'] = cfg.experiment.dataset.d
     df['size'] = cfg.experiment.dataset.size

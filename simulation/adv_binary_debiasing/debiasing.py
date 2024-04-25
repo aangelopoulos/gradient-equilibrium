@@ -28,12 +28,17 @@ def get_adversarial_gradient(theta, By):
     wc_g = torch.zeros(len(theta))
     wc_y = 0
     wc_grad = 0
-    for i in range(len(theta)):
-        _g = torch.zeros(len(theta))
-        _g[i] = 1
-        _y = By * torch.sign(theta[i])
+    d = len(theta)
+    binary_vectors = torch.tensor(np.array(np.meshgrid(*[[0, 1]] * d)).T.reshape(-1, d)).float()
+    for i in range(len(binary_vectors)):
+        _g = binary_vectors[i]
+        _y = By if _g[0] == 1 else -By
         _grad = torch.dot(_g, theta) - _y
-        if _grad < wc_grad:
+        if (_g[0] == 1) & (_grad < wc_grad):
+            wc_g = _g
+            wc_y = _y
+            wc_grad = _grad
+        elif (_g[0] == 0) & (_grad > wc_grad):
             wc_g = _g
             wc_y = _y
             wc_grad = _grad

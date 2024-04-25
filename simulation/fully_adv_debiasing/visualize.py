@@ -84,10 +84,11 @@ def __(T, df, np, plt, sns):
             B_theta = np.nan_to_num(_to_plot.oracle_norm_thetaT_theta0,100).max()
             # Also plot the theoretical bound
             bound= B_theta/(min_eta * _t)
-            _lp.plot(_t[100:], bound[100:], 'k--', linewidth=3, label=r'bound')
+            _lp.plot(_t[300:], bound[300:], 'k--', linewidth=3, label=r'bound')
             _axs[_i,_j].set_ylabel("Norm avg grad (By=" + str(shifts_to_plot[_i]) + ')')
             _axs[_i,_j].set_xlabel("Time (T)")
             _axs[_i,_j].legend(loc='upper right')
+            _axs[_i,_j].set_ylim([0,100])
     plt.tight_layout()
     plt.gca()
     return (
@@ -119,12 +120,12 @@ def __(
 
     for _i in range(len(shifts_to_plot)):
         for _j in range(len(kappas_to_plot)):
-            _shift = shifts_to_plot[_i]
-            _kappa = kappas_to_plot[_j]
+            shift = shifts_to_plot[_i]
+            kappa = kappas_to_plot[_j]
             _to_plot = df[
                 df.lr.isin(etas_to_plot) &
-                (df.viscosity==_kappa) & 
-                (df.By == _shift) &
+                (df.viscosity==kappa) & 
+                (df.By == shift) &
                 (df.time % plot_every == 0)
             ].sort_values(["lr", "viscosity"], ascending=False)
             _lp = sns.lineplot(
@@ -139,9 +140,10 @@ def __(
             _axs[_i,_j].set_ylabel("Norm iterate (By=" + str(shifts_to_plot[_i]) + ')')
             _axs[_i,_j].set_xlabel("Time (T)")
             _axs[_i,_j].legend(loc='upper right')
+            _axs[_i,_j].set_ylim([0,100])
     plt.tight_layout()
     plt.gca()
-    return
+    return kappa, shift
 
 
 @app.cell
