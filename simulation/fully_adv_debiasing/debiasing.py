@@ -29,14 +29,14 @@ def get_adversarial_gradient(theta, Bg, By):
     if theta[0] >= 0:
         # Set g to be a vector orthogonal to theta
         g[0] = Bg
-        g[1] = -g[0]*theta[0]/(theta[1] + 1e-6)
+        g[1] = -g[0]*theta[0]/(theta[1] + 1e-9)
         y = By
-        # Resulting gradient: -BgBy. Thus, theta[0] will become more positive.
+        # Resulting gradient negative. Thus, theta[0] will become more positive.
     else:
         g[0] = Bg
-        g[1] = -g[0]*theta[0]/(theta[1] + 1e-6)
+        g[1] = -g[0]*theta[0]/(theta[1] + 1e-9)
         y = -By
-        # Resulting gradient: BgBy. Thus, theta[0] will become more negative.
+        # Resulting gradient positive. Thus, theta[0] will become more negative.
     return g, torch.tensor([y]).float()
 
 # OLS model
@@ -82,6 +82,7 @@ def main(cfg):
         optimizer.zero_grad()
         thetas[t] = model.theta.detach().cpu()
         g_t, y_t = get_adversarial_gradient(thetas[t], cfg.experiment.dataset.Bg, cfg.experiment.dataset.By)
+        print(thetas[t], g_t)
         prediction = model(g_t.to(device))
         loss = 0.5*loss_fn(prediction.squeeze(), y_t.to(device).squeeze())
         loss.backward()

@@ -3,6 +3,6 @@ defaults:
 
 dataset:
   size: 2000
-  d: 2
+  d: 3 
   By: 1
   Bg: 1
