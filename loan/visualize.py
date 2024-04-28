@@ -19,7 +19,7 @@ def __():
 @app.cell
 def __(__file__, np, os, pd):
     # Read in the data
-    experiment = 'gradient_boosting'
+    experiment = 'gradient_boosting_sex_familystatus'
     # Get path of current file
     base_path = os.path.dirname(os.path.abspath(__file__))
     dfs = [ pd.read_pickle(base_path + '/.cache/' + experiment + "/" + f) for f in os.listdir(base_path + '/.cache/' + experiment) ]

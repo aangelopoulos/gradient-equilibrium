@@ -31,7 +31,7 @@ class LogisticModel(nn.Module):
     def forward(self, x_t):
         return torch.sigmoid(x_t @ self.theta)
 
-@hydra.main(config_path='configs', config_name='gradient_boosting', version_base="1.3.2")
+@hydra.main(config_path='configs', config_name='gradient_boosting_sex_familystatus', version_base="1.3.2")
 def main(cfg):
 # Get job ID
     hydra_cfg = HydraConfig.get()
@@ -41,7 +41,7 @@ def main(cfg):
         device = "cuda"
 
 # Load the data
-    data = pd.read_pickle(f"./.cache/{cfg.experiment_name}.pkl")
+    data = pd.read_pickle(f"./.cache/{cfg.model_type}.pkl")
     groups = torch.tensor(pd.get_dummies(data[cfg.experiment.dataset.columns]).values, dtype=torch.float32)
     data['residuals'] = data['target'] - data['prediction']
     d = groups.shape[1]
