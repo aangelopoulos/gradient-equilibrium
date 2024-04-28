@@ -1,3 +1,5 @@
+outputs/
+
 # Ignore all .DS_Store in all subfolders
 .DS_Store
 **/.DS_Store
