@@ -10,6 +10,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.utils import check_array
 from tqdm import tqdm
+import pdb
 
 # Get the parent directory of this file
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -32,18 +33,19 @@ combined_data.dischtime = pd.to_datetime(combined_data.dischtime)
 combined_data.deathtime = pd.to_datetime(combined_data.deathtime)
 
 # Convert to days
-combined_data['length_of_stay'] = (combined_data.dischtime - combined_data.admittime).dt.days
-combined_data.deathtime = (combined_data.deathtime - combined_data.admittime.min()) / np.timedelta64(1, 'D')
-combined_data.dischtime = (combined_data.dischtime - combined_data.admittime.min()) / np.timedelta64(1, 'D')
-combined_data.admittime = (combined_data.admittime - combined_data.admittime.min()) / np.timedelta64(1, 'D')
+combined_data['length_of_stay'] = combined_data.dischtime - combined_data.admittime
+combined_data['length_of_stay_float'] = (combined_data.dischtime - combined_data.admittime).dt.days
+combined_data['deathtime_float'] = (combined_data.deathtime - combined_data.admittime.min()) / np.timedelta64(1, 'D')
+combined_data['dischtime_float'] = (combined_data.dischtime - combined_data.admittime.min()) / np.timedelta64(1, 'D')
+combined_data['admittime_float'] = (combined_data.admittime - combined_data.admittime.min()) / np.timedelta64(1, 'D')
 
 combined_data.sort_values(by='admittime', inplace=True)
 
 # Clean up for prediction
-data = combined_data[['admittime', 'ethnicity', 'marital_status', 'insurance', 'language','length_of_stay']]
+data = combined_data[['admittime', 'admittime_float', 'ethnicity', 'marital_status', 'insurance', 'language','length_of_stay', 'length_of_stay_float']]
+data = data[data.ethnicity.isin(['ASIAN', 'WHITE', 'BLACK/AFRICAN AMERICAN', 'HISPANIC OR LATINO'])]
 # Cut rows with nan
 data = data.dropna()
-data = data[data.ethnicity.isin(['ASIAN', 'WHITE', 'BLACK/AFRICAN AMERICAN', 'HISPANIC OR LATINO'])]
 
 regressor = "gradient_boosting"
 if regressor == "gradient_boosting":
@@ -56,8 +58,8 @@ else:
 columns = data.columns
 
 # Separate features and target
-X_test = data.drop('length_of_stay', axis=1)
-y_test = data['length_of_stay']
+X_test = data.drop(['length_of_stay_float', 'admittime', 'length_of_stay'], axis=1)
+y_test = data['length_of_stay_float']
 
 # Identify numeric and categorical columns
 numeric_features = X_test.select_dtypes(include=['int64', 'float64']).columns
@@ -110,5 +112,5 @@ yhats = np.concatenate([np.zeros(len(X_test) - len(yhats)), yhats])
 
 # Save the X_test, y_test, y_predict_proba as a dataframe, with the original columns plus 'target' and 'prediction' columns
 os.makedirs('./.cache', exist_ok=True)
-df = pd.DataFrame(np.column_stack([X_test, y_test, yhats]), columns=list(X_test.columns) + ['target', 'prediction'])
-df.to_pickle(f"./.cache/{regressor}.pkl")
+data['yhat'] = yhats
+data.to_pickle(f"./.cache/{regressor}.pkl")
