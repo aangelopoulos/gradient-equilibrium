@@ -45,7 +45,7 @@ def __(np, os, pd):
 @app.cell
 def __(sns):
     # Plotting setup
-    sns.set() 
+    sns.set()
     sns.set_style("whitegrid")
     sns.set_context("talk")
     return
@@ -68,17 +68,17 @@ def __(T, df, np, plt, sns):
             _kappa = kappas_to_plot[_j]
             _to_plot = df[
                 df.lr.isin(etas_to_plot) &
-                (df.viscosity==_kappa) & 
+                (df.viscosity==_kappa) &
                 (df.By == _shift) &
                 (df.time % plot_every == 0)
             ].sort_values(["lr", "viscosity"], ascending=False)
             _lp = sns.lineplot(
-                ax=_axs[_i,_j], 
+                ax=_axs[_i,_j],
                 data=_to_plot,
-                x="time", 
-                y="norm_avg_grad", 
-                hue="parameters", 
-                linewidth=3, 
+                x="time",
+                y="norm_avg_grad",
+                hue="parameters",
+                linewidth=3,
                 alpha=1
             )
             B_theta = np.nan_to_num(_to_plot.oracle_norm_thetaT_theta0,100).max()
@@ -124,17 +124,17 @@ def __(
             kappa = kappas_to_plot[_j]
             _to_plot = df[
                 df.lr.isin(etas_to_plot) &
-                (df.viscosity==kappa) & 
+                (df.viscosity==kappa) &
                 (df.By == shift) &
                 (df.time % plot_every == 0)
             ].sort_values(["lr", "viscosity"], ascending=False)
             _lp = sns.lineplot(
-                ax=_axs[_i,_j], 
+                ax=_axs[_i,_j],
                 data=_to_plot,
-                x="time", 
-                y="norm_iterate", 
-                hue="parameters", 
-                linewidth=3, 
+                x="time",
+                y="norm_iterate",
+                hue="parameters",
+                linewidth=3,
                 alpha=1
             )
             _axs[_i,_j].set_ylabel("Norm iterate (By=" + str(shifts_to_plot[_i]) + ')')
@@ -163,18 +163,18 @@ def __(
     for _i in range(len(shifts_to_plot)):
         for _j in range(len(kappas_to_plot)):
             _to_plot = df[
-                df.lr.isin(etas_to_plot) & 
-                (df.viscosity==kappas_to_plot[_j]) & 
+                df.lr.isin(etas_to_plot) &
+                (df.viscosity==kappas_to_plot[_j]) &
                 (df.By==shifts_to_plot[_i]) &
                 (df.time % plot_every == 0)
             ].sort_values("lr", ascending=False)
             normalized_time = np.arange(T//plot_every)/(T//plot_every)
             _lp = sns.scatterplot(
-                ax=_axs[_i,_j], 
-                data=_to_plot, 
-                x='theta_1', 
-                y='theta_2', 
-                hue="parameters", 
+                ax=_axs[_i,_j],
+                data=_to_plot,
+                x='theta_1',
+                y='theta_2',
+                hue="parameters",
                 #c=normalized_time,
                 alpha=0.5
             )
