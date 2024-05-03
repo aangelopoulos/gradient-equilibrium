@@ -1,0 +1,5 @@
+defaults:
+  - _self_
+
+dataset:
+  columns: ['admittime_float', 'ethnicity', 'marital_status', 'insurance', 'language']

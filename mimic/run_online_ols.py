@@ -10,10 +10,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from torch.optim import SGD
-from algorithms import VGD, LogisticModel
+from algorithms import VGD, OLSModel
 import hydra
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
+from tqdm import tqdm
 
 def set_randomness(seed=0):
     np.random.seed(seed)
@@ -21,7 +22,8 @@ def set_randomness(seed=0):
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
 
-@hydra.main(config_path='configs', config_name='gradient_boosting_sex_familystatus', version_base="1.3.2")
+
+@hydra.main(config_path='configs', config_name='gradient_boosting_ols', version_base="1.3.2")
 def main(cfg):
 # Get job ID
     hydra_cfg = HydraConfig.get()
@@ -32,16 +34,21 @@ def main(cfg):
 
 # Load the data
     data = pd.read_pickle(f"./.cache/{cfg.model_type}.pkl")
-    groups = torch.tensor(pd.get_dummies(data[cfg.experiment.dataset.columns]).values, dtype=torch.float32)
-    data['residuals'] = data['target'] - data['prediction']
+    groups = torch.tensor(pd.get_dummies(data[cfg.experiment.dataset.columns]).values.astype(float), dtype=torch.float32)
+    data['residuals'] = data['length_of_stay_float'] #- data['yhat'] Set the predictions all to 0
+    ymax = data['residuals'].max()
+    data['residuals'] /= ymax
+    admittime_max = data.admittime_float.max()
+    data['admittime_float'] /= admittime_max
     d = groups.shape[1]
+    data = data.head(10000)
     n = len(data)
 
 # Initialize the simple model
-    model = LogisticModel(torch.zeros((d,)))
+    model = OLSModel(torch.zeros((d,)))
 
 # Define the mean squared error loss
-    loss_fn = nn.BCELoss(reduction='sum')
+    loss_fn = nn.MSELoss(reduction='sum')
 
 # Initialize the Viscosity Gradient Descent optimizer
     optimizer = VGD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=cfg.experiment.optimizer.viscosity)
@@ -66,13 +73,12 @@ def main(cfg):
         loss = 0.5*loss_fn(prediction.squeeze(), y_t.to(device).squeeze())
         loss.backward()
         optimizer.step()
+        #print(f"loss: {loss.item()}, g_t: {g_t}, yhat_t: {prediction}, y_t: {y_t}")
         ys[t+1] = y_t.detach().cpu()
         gs[t+1] = g_t.detach().cpu()
         gradients[t+1] = model.theta.grad.detach().cpu()
         average_gradients[t+1] = gradients[:t+1].mean(dim=0)
-
-    print(average_gradients)
-
+        
 # Cache the thetas, ys, gradients, and norms in a pandas dictionary
     os.makedirs('.cache/' + cfg.experiment_name, exist_ok=True)
     df = pd.DataFrame({'theta': thetas.tolist(), 'y': ys.tolist(), 'g': gs.tolist(), 'gradient': gradients.tolist(), 'average_gradient': average_gradients.tolist()})

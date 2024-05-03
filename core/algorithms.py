@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pdb
 
-# Define the Viscosity Gradient Descent (VGD) optimizer
+# Define the Viscous Gradient Descent (VGD) optimizer
 class VGD(torch.optim.Optimizer):
     def __init__(self, params, lr=1e-3, viscosity=0.9):
         if lr < 0.0:
@@ -39,3 +39,23 @@ class VGD(torch.optim.Optimizer):
                 p.data = (p.data * (1 - group['viscosity'])) + (prev_iterate * group['viscosity']) - group['lr'] * d_p
 
         return loss
+
+# OLS model
+class OLSModel(nn.Module):
+    def __init__(self, theta0):
+        super(OLSModel, self).__init__()
+        self.d = theta0.shape[0]
+        self.theta = nn.Parameter(theta0)
+
+    def forward(self, x_t):
+        return torch.matmul(x_t, self.theta)
+    
+# Logistic model
+class LogisticModel(nn.Module):
+    def __init__(self, theta0):
+        super(LogisticModel, self).__init__()
+        self.d = theta0.shape[0]
+        self.theta = nn.Parameter(theta0)
+
+    def forward(self, x_t):
+        return torch.sigmoid(x_t @ self.theta)

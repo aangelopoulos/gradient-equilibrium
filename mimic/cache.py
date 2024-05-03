@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
@@ -85,8 +84,6 @@ preprocessor = ColumnTransformer(
         ('cat', categorical_transformer, categorical_features)],
         remainder='passthrough')
 
-# Choose regressor
-
 # Create a pipeline with preprocessor and a regressor
 model = Pipeline(steps=[
     ('preprocessor', preprocessor),
@@ -110,7 +107,8 @@ yhats = np.concatenate(yhats)
 # Fill in zeros for the first batch of predictions
 yhats = np.concatenate([np.zeros(len(X_test) - len(yhats)), yhats])
 
-# Save the X_test, y_test, y_predict_proba as a dataframe, with the original columns plus 'target' and 'prediction' columns
+# Save the yhats in the dataframe
 os.makedirs('./.cache', exist_ok=True)
 data['yhat'] = yhats
+print(data)
 data.to_pickle(f"./.cache/{regressor}.pkl")

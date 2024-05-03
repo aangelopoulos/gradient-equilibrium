@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from torch.optim import SGD
-from algorithms import VGD
+from algorithms import VGD, OLSModel
 import hydra
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
@@ -39,16 +39,6 @@ def get_adversarial_gradient(theta, By):
             wc_grad = _grad
     return wc_g, torch.tensor([wc_y]).float()
 
-# OLS model
-class OLSModel(nn.Module):
-    def __init__(self, theta0):
-        super(OLSModel, self).__init__()
-        self.d = theta0.shape[0]
-        self.theta = nn.Parameter(theta0)
-
-    def forward(self, x_t):
-        return torch.matmul(x_t, self.theta)
-
 @hydra.main(config_path='configs', config_name='basic', version_base="1.3.2")
 def main(cfg):
 # Get job ID
@@ -71,8 +61,8 @@ def main(cfg):
 
 # Training loop
     thetas = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
-    ys = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
-    gs = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
+    ys = torch.zeros(cfg.experiment.dataset.size+1)
+    gs = torch.zeros(cfg.experiment.dataset.size+1)
     gradients = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
     average_gradients = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
 

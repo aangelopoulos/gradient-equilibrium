@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from torch.optim import SGD
-from algorithms import VGD
+from algorithms import VGD, OLSModel
 import hydra
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
@@ -59,16 +59,6 @@ class SyntheticDataset(torch.utils.data.Dataset):
         yhat_t = self.yhat[idx]
         return idx, g_t, y_t, yhat_t
 
-# OLS model
-class OLSModel(nn.Module):
-    def __init__(self, theta0):
-        super(OLSModel, self).__init__()
-        self.d = theta0.shape[0]
-        self.theta = nn.Parameter(theta0)
-
-    def forward(self, x_t):
-        return torch.matmul(x_t, self.theta)
-
 @hydra.main(config_path='configs', config_name='basic', version_base="1.3.2")
 def main(cfg):
 # Get job ID
@@ -101,8 +91,8 @@ def main(cfg):
 
 # Training loop (simplified for demonstration)
     thetas = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
-    ys = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
-    yhats = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
+    ys = torch.zeros(cfg.experiment.dataset.size+1)
+    yhats = torch.zeros(cfg.experiment.dataset.size+1)
     gs = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
     gradients = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
     average_gradients = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)

@@ -1,0 +1,14 @@
+defaults:
+  - /experiment/default
+  - override hydra/launcher: joblib
+  - _self_
+
+experiment_name: gradient_boosting_ols
+model_type: gradient_boosting
+
+hydra:
+  sweeper:
+    params:
+      experiment.optimizer.lr: 0, 0.000000001, 0.000000005, 0.00000001
+      experiment.optimizer.viscosity: 0,0.1,0.5,0.9
+      experiment.dataset.columns: "['admittime_float', 'ethnicity', 'marital_status', 'insurance', 'language']"
