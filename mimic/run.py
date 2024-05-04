@@ -15,6 +15,7 @@ import hydra
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
+import pdb
 
 def set_randomness(seed=0):
     np.random.seed(seed)
@@ -23,7 +24,7 @@ def set_randomness(seed=0):
     torch.cuda.manual_seed_all(seed)
 
 
-@hydra.main(config_path='configs', config_name='gradient_boosting_ols', version_base="1.3.2")
+@hydra.main(config_path='configs', config_name='gradient_boosting_f_ethnicity', version_base="1.3.2")
 def main(cfg):
 # Get job ID
     hydra_cfg = HydraConfig.get()
@@ -34,13 +35,13 @@ def main(cfg):
 
 # Load the data
     data = pd.read_pickle(f"./.cache/{cfg.model_type}.pkl")
-    groups = torch.tensor(pd.get_dummies(data[cfg.experiment.dataset.columns]).values.astype(float), dtype=torch.float32)
-    data['residuals'] = data['length_of_stay_float'] #- data['yhat'] Set the predictions all to 0
-    ymax = data['residuals'].max()
-    data['residuals'] /= ymax
-    admittime_max = data.admittime_float.max()
-    data['admittime_float'] /= admittime_max
-    d = groups.shape[1]
+    if len(cfg.experiment.dataset.columns) > 0:
+        xs = torch.tensor(pd.get_dummies(data[cfg.experiment.dataset.columns]).values.astype(float), dtype=torch.float32)
+        xs = torch.concat([xs, torch.ones(len(xs),1)], axis=1)
+    else:
+        xs = torch.ones(len(data),1)
+    data['residuals'] = data['length_of_stay_float'] - data['f']
+    d = xs.shape[1]
     data = data.head(10000)
     n = len(data)
 
@@ -56,7 +57,9 @@ def main(cfg):
 # Training loop
     thetas = torch.zeros(n+1, d)
     ys = torch.zeros(n+1)
-    gs = torch.zeros(n+1, d)
+    fs = torch.zeros(n+1)
+    yhats = torch.zeros(n+1)
+    losses = torch.zeros(n+1)
     gradients = torch.zeros(n+1, d)
     average_gradients = torch.zeros(n+1, d)
 
@@ -64,24 +67,30 @@ def main(cfg):
 
     for t in range(len(data)):
         # Set up data
-        g_t = groups[t]
-        y_t = torch.tensor(data['residuals'].iloc[t], dtype=torch.float32)
+        x_t = xs[t]
+        y_t = torch.tensor(data['length_of_stay_float'].iloc[t], dtype=torch.float32)
+        f_t = torch.tensor(data['f'].iloc[t], dtype=torch.float32)
+        r_t = torch.tensor(data['residuals'].iloc[t], dtype=torch.float32)
 
+        # Perform optimization
         optimizer.zero_grad()
         thetas[t+1] = model.theta.detach().cpu()
-        prediction = model(g_t.to(device))
-        loss = 0.5*loss_fn(prediction.squeeze(), y_t.to(device).squeeze())
+        prediction = model(x_t.to(device))
+        loss = 0.5*loss_fn(prediction.squeeze(), r_t.to(device).squeeze())
         loss.backward()
         optimizer.step()
-        #print(f"loss: {loss.item()}, g_t: {g_t}, yhat_t: {prediction}, y_t: {y_t}")
+
+        # Store results
         ys[t+1] = y_t.detach().cpu()
-        gs[t+1] = g_t.detach().cpu()
+        fs[t+1] = f_t
+        yhats[t+1] = f_t + prediction
+        losses[t+1] = loss.detach().cpu().item()
         gradients[t+1] = model.theta.grad.detach().cpu()
         average_gradients[t+1] = gradients[:t+1].mean(dim=0)
         
 # Cache the thetas, ys, gradients, and norms in a pandas dictionary
     os.makedirs('.cache/' + cfg.experiment_name, exist_ok=True)
-    df = pd.DataFrame({'theta': thetas.tolist(), 'y': ys.tolist(), 'g': gs.tolist(), 'gradient': gradients.tolist(), 'average_gradient': average_gradients.tolist()})
+    df = pd.DataFrame({'theta': thetas.tolist(), 'y': ys.tolist(), 'f': fs.tolist(), 'yhats': yhats.tolist(), 'loss' : losses.tolist(), 'gradient': gradients.tolist(), 'average_gradient': average_gradients.tolist()})
     df['lr'] = cfg.experiment.optimizer.lr
     df['viscosity'] = cfg.experiment.optimizer.viscosity
     df['d'] = d

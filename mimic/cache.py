@@ -90,7 +90,7 @@ model = Pipeline(steps=[
     ('regressor', regressor_function)])
 
 # Fine-tune the model online using a growing dataset
-yhats = []
+fs = []
 idxs = [ len(X_test) // 12 * i for i in range(12) ]
 idxs = idxs[1:]
 idxs[-1] = len(X_test)
@@ -101,14 +101,14 @@ for i in tqdm(range(10)):
     _y_train = y_test[:idx]
     
     model.fit(_X_train, _y_train)
-    yhats.append(model.predict(X_test[idx:idxs[i+1]]))
+    fs.append(model.predict(X_test[idx:idxs[i+1]]))
     
-yhats = np.concatenate(yhats)
+fs = np.concatenate(fs)
 # Fill in zeros for the first batch of predictions
-yhats = np.concatenate([np.zeros(len(X_test) - len(yhats)), yhats])
+fs = np.concatenate([np.zeros(len(X_test) - len(fs)), fs])
 
-# Save the yhats in the dataframe
+# Save the fs in the dataframe
 os.makedirs('./.cache', exist_ok=True)
-data['yhat'] = yhats
+data['f'] = fs
 print(data)
 data.to_pickle(f"./.cache/{regressor}.pkl")
