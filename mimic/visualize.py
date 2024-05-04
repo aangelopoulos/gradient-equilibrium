@@ -26,11 +26,11 @@ def __(__file__, np, os, pd):
     df = pd.concat(dfs, ignore_index=False)
     df = df.reset_index(names="time")
     df['parameters'] = [r'$\eta=$' + str(row['lr']) + r', $\kappa=$' + str(row['viscosity']) for _, row in df.iterrows()]
-    df['norm_avg_grad'] = df.average_gradient.apply(np.linalg.norm, ord=np.inf)
+    df['norm_avg_grad'] = df['average gradient'].apply(np.linalg.norm, ord=np.inf)
     theta0 = np.array(df.theta.iloc[0])
     d = len(theta0)
     for j in range(d):
-        df['avg_grad_' + str(j+1)] = df.average_gradient.apply(lambda x : x[j])
+        df['avg_grad_' + str(j+1)] = df['average gradient'].apply(lambda x : x[j])
     df['norm_iterate'] = df.theta.apply(np.linalg.norm, ord=np.inf)
     df['theta_1'] = df.theta.apply(lambda th : th[0])
     df['theta_2'] = df.theta.apply(lambda th : th[1])
@@ -176,6 +176,11 @@ def __(T, df, etas_to_plot, kappas_to_plot, np, plot_every, plt, sns):
     plt.tight_layout()
     plt.gca()
     return normalized_time,
+
+
+@app.cell
+def __():
+    return
 
 
 if __name__ == "__main__":

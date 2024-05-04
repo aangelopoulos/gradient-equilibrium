@@ -5,10 +5,11 @@ defaults:
 
 experiment_name: gradient_boosting_simple
 model_type: gradient_boosting
+covariates_for_plotting: ['ethnicity', 'marital_status']
 
 hydra:
   sweeper:
     params:
-      experiment.optimizer.lr: 0, 0.001, 0.005, 0.01
+      experiment.optimizer.lr: 0, 0.0001, 0.001, 0.01
       experiment.optimizer.viscosity: 0,0.1,0.5,0.9
       experiment.dataset.columns: "[]"

@@ -45,6 +45,7 @@ data = combined_data[['admittime', 'admittime_float', 'ethnicity', 'marital_stat
 data = data[data.ethnicity.isin(['ASIAN', 'WHITE', 'BLACK/AFRICAN AMERICAN', 'HISPANIC OR LATINO'])]
 # Cut rows with nan
 data = data.dropna()
+data = data.reset_index().drop("index", axis=1)
 
 regressor = "gradient_boosting"
 if regressor == "gradient_boosting":

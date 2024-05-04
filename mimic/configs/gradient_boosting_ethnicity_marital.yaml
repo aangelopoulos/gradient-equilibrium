@@ -5,6 +5,7 @@ defaults:
 
 experiment_name: gradient_boosting_ethnicity_marital
 model_type: gradient_boosting
+covariates_for_plotting: ['ethnicity', 'marital_status']
 
 hydra:
   sweeper:
