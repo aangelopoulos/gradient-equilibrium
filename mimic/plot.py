@@ -11,7 +11,7 @@ import itertools
 
 # %%
 # Flags
-experiment_name = "gradient_boosting_simplel"
+experiment_name = "gradient_boosting_ethnicity_marital"
 show_f=False
 show_viscosity=False
 save=True
@@ -107,4 +107,3 @@ if save:
     plt.savefig('./plots/' + experiment_name + "/" + "stratified.pdf")
 if show:
     plt.show()
-# %%

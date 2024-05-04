@@ -24,7 +24,7 @@ def set_randomness(seed=0):
     torch.cuda.manual_seed_all(seed)
 
 
-@hydra.main(config_path='configs', config_name='gradient_boosting_nomodel', version_base="1.3.2")
+@hydra.main(config_path='configs', config_name='gradient_boosting_ethnicity_marital', version_base="1.3.2")
 def main(cfg):
 # Get job ID
     hydra_cfg = HydraConfig.get()
