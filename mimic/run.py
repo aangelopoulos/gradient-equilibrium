@@ -24,7 +24,7 @@ def set_randomness(seed=0):
     torch.cuda.manual_seed_all(seed)
 
 
-@hydra.main(config_path='configs', config_name='gradient_boosting_ethnicity_marital', version_base="1.3.2")
+@hydra.main(config_path='configs', config_name='nomodel_ethnicity_marital', version_base="1.3.2")
 def main(cfg):
 # Get job ID
     hydra_cfg = HydraConfig.get()
@@ -39,12 +39,11 @@ def main(cfg):
         data["f"] = 0
     if len(cfg.experiment.dataset.columns) > 0:
         xs = torch.tensor(pd.get_dummies(data[cfg.experiment.dataset.columns]).values.astype(float), dtype=torch.float32)
-        xs = torch.concat([xs, torch.ones(len(xs),1)], axis=1)
     else:
         xs = torch.ones(len(data),1)
     data['residuals'] = data['length_of_stay_float'] - data['f']
     d = xs.shape[1]
-    data = data.head(10000)
+    data = data.tail(20000)
     n = len(data)
 
 # Initialize the simple model
@@ -104,13 +103,14 @@ def main(cfg):
         'average gradient': average_gradients.tolist(), 
         'average loss' : average_losses.tolist()
     })
-    df['lr'] = cfg.experiment.optimizer.lr
-    df['viscosity'] = cfg.experiment.optimizer.viscosity
-    df['d'] = d
-    df['admittime'] = data.admittime
+    df.loc[1:,"admittime"] = data.admittime.values
     for col in cfg.experiment.dataset.columns + cfg.covariates_for_plotting:
         if col not in df.columns:
-            df[col] = data[col]
+            df.loc[1:,col] = data[col].values
+
+    df['lr'] = float(cfg.experiment.optimizer.lr)
+    df['viscosity'] = cfg.experiment.optimizer.viscosity
+    df['d'] = d
     df.to_pickle('.cache/' + cfg.experiment_name + '/' + job_id + '.pkl')
 
 if __name__ == "__main__":

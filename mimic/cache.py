@@ -1,3 +1,4 @@
+# %%
 import os
 import numpy as np
 import pandas as pd
@@ -10,6 +11,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.utils import check_array
 from tqdm import tqdm
 import pdb
+import argparse
+import mimic_utils
 
 # Get the parent directory of this file
 current_directory = os.path.dirname(os.path.abspath(__file__))
@@ -17,49 +20,80 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 # Get the data directory
 data_directory = os.path.join(current_directory, 'data')
 
-# Get the CSV files
-csv_files = [f for f in os.listdir(data_directory) if f.endswith('.csv')]
+mimic_utils.process_mimic_data(data_directory)
 
-# Iterate over each CSV file and merge them by subject_id
-combined_data = pd.DataFrame()
-for file in csv_files:
-    file_path = os.path.join(data_directory, file)
-    data = pd.read_csv(file_path)
-    combined_data = pd.concat([combined_data, data], ignore_index=True)
+df = pd.read_csv(data_directory + '/processed_mimic_data.csv')
 
-combined_data.admittime = pd.to_datetime(combined_data.admittime)
-combined_data.dischtime = pd.to_datetime(combined_data.dischtime)
-combined_data.deathtime = pd.to_datetime(combined_data.deathtime)
+# Split the 'diagnoses' column by the separator '<sep>'
+df['diagnoses'] = df['diagnoses'].str.split(' <sep> ')
+df['procedure'] = df['procedure'].str.split(' <sep> ')
+df['admittime'] = pd.to_datetime(df['admittime'])
+df['dischtime'] = pd.to_datetime(df['dischtime'])
+temp_df = df[['diagnoses', 'procedure', 'subject_id']]
+df = df.drop(['diagnoses', 'procedure'], axis=1)
 
-# Convert to days
-combined_data['length_of_stay'] = combined_data.dischtime - combined_data.admittime
-combined_data['length_of_stay_float'] = (combined_data.dischtime - combined_data.admittime).dt.days
-combined_data['deathtime_float'] = (combined_data.deathtime - combined_data.admittime.min()) / np.timedelta64(1, 'D')
-combined_data['dischtime_float'] = (combined_data.dischtime - combined_data.admittime.min()) / np.timedelta64(1, 'D')
-combined_data['admittime_float'] = (combined_data.admittime - combined_data.admittime.min()) / np.timedelta64(1, 'D')
+# Explode the list-like column into rows
+temp_df = temp_df.explode('diagnoses')
+temp_df = temp_df.explode('procedure')
 
-combined_data.sort_values(by='admittime', inplace=True)
+# Create one-hot encoding for top 10
+top_diagnoses = temp_df.diagnoses.value_counts().head(50).index
+temp_df.diagnoses[~temp_df.diagnoses.isin(top_diagnoses)] = 'other diagnosis'
+top_procedures = [c for c in temp_df.procedure.value_counts().head(50).index if c not in top_diagnoses]
+temp_df.procedure[~temp_df.procedure.isin(top_procedures)] = 'other procedure'
 
+temp_df = pd.get_dummies(temp_df, columns=['diagnoses', 'procedure'], prefix='', prefix_sep='')
+
+# Convert to floats
+bool_cols = temp_df.select_dtypes(include='bool').columns
+temp_df = temp_df.astype({
+    c : float for c in bool_cols
+})
+
+# %%
+
+# re-collapse by subject_id
+temp_df = temp_df.groupby(['subject_id']).max(numeric_only=True)
+
+df = df.merge(temp_df, on="subject_id", how="inner")
+
+# Calculate the percentage of NaN values in each column
+na_percentage = df.isnull().sum() / df.shape[0]
+
+# Find columns with more than 90% NaN values
+drop_cols = na_percentage[na_percentage > .9].index.tolist()
+
+# Remove the columns from the dataframe
+df = df.drop(columns=drop_cols)
+
+print(df.head())
+
+df['length_of_stay'] = df.dischtime - df.admittime
+df['length_of_stay_float'] = (df.dischtime - df.admittime).dt.days
+df['dischtime_float'] = (df.dischtime - df.admittime.min()) / np.timedelta64(1, 'D')
+df['admittime_float'] = (df.admittime - df.admittime.min()) / np.timedelta64(1, 'D')
+
+df.sort_values(by='admittime', inplace=True)
+
+columns = df.columns
 # Clean up for prediction
-data = combined_data[['admittime', 'admittime_float', 'ethnicity', 'marital_status', 'insurance', 'language','length_of_stay', 'length_of_stay_float']]
-data = data[data.ethnicity.isin(['ASIAN', 'WHITE', 'BLACK/AFRICAN AMERICAN', 'HISPANIC OR LATINO'])]
+df = df[df.ethnicity.isin(['ASIAN', 'WHITE', 'BLACK/AFRICAN AMERICAN', 'HISPANIC OR LATINO'])]
 # Cut rows with nan
-data = data.dropna()
-data = data.reset_index().drop("index", axis=1)
+df = df.reset_index().drop("index", axis=1)
+
+# %%
 
 regressor = "gradient_boosting"
 if regressor == "gradient_boosting":
-    regressor_function = HistGradientBoostingRegressor(max_depth=5)
+    regressor_function = HistGradientBoostingRegressor(max_depth=20)
 elif regressor == "logistic_regression":
     regressor_function = LogisticRegression(max_iter=10)
 else:
     raise ValueError(f"Invalid regrssor: {regressor}")
 
-columns = data.columns
-
 # Separate features and target
-X_test = data.drop(['length_of_stay_float', 'admittime', 'length_of_stay'], axis=1)
-y_test = data['length_of_stay_float']
+X_test = df.drop(['length_of_stay_float', 'admittime', 'dischtime', 'dischtime_float', 'admittime_float', 'length_of_stay'], axis=1)
+y_test = df['length_of_stay_float']
 
 # Identify numeric and categorical columns
 numeric_features = X_test.select_dtypes(include=['int64', 'float64']).columns
@@ -102,7 +136,11 @@ for i in tqdm(range(10)):
     _y_train = y_test[:idx]
     
     model.fit(_X_train, _y_train)
-    fs.append(model.predict(X_test[idx:idxs[i+1]]))
+    preds = model.predict(X_test[idx:idxs[i+1]])
+    preds_mse = np.mean(np.square(preds-y_test[idx:idxs[i+1]]))
+    mean_mse = np.mean(np.square(y_test[idx:idxs[i+1]].mean()-y_test[idx:idxs[i+1]]))
+    print(i, preds_mse, mean_mse)
+    fs.append(preds)
     
 fs = np.concatenate(fs)
 # Fill in zeros for the first batch of predictions
@@ -110,6 +148,7 @@ fs = np.concatenate([np.zeros(len(X_test) - len(fs)), fs])
 
 # Save the fs in the dataframe
 os.makedirs('./.cache', exist_ok=True)
-data['f'] = fs
-print(data)
-data.to_pickle(f"./.cache/{regressor}.pkl")
+df['f'] = fs
+print(df)
+df.to_pickle(f"./.cache/{regressor}.pkl")
+# %%

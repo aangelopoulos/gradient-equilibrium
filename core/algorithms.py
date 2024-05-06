@@ -7,8 +7,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pdb
 
-# Define the Viscous Gradient Descent (VGD) optimizer
-class VGD(torch.optim.Optimizer):
+# Define the gradient descent optimizer with telescoping ridge penalty
+class GD(torch.optim.Optimizer):
     def __init__(self, params, lr=1e-3, viscosity=0.9):
         if lr < 0.0:
             raise ValueError("Invalid learning rate: {}".format(lr))
@@ -16,7 +16,7 @@ class VGD(torch.optim.Optimizer):
             raise ValueError("Invalid viscosity value: {}".format(viscosity))
 
         defaults = dict(lr=lr, viscosity=viscosity)
-        super(VGD, self).__init__(params, defaults)
+        super(GD, self).__init__(params, defaults)
 
     @torch.no_grad()
     def step(self, closure=None):

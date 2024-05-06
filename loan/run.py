@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from torch.optim import SGD
-from algorithms import VGD, LogisticModel
+from algorithms import GD, LogisticModel
 import hydra
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
@@ -33,7 +33,7 @@ def main(cfg):
 # Load the data
     data = pd.read_pickle(f"./.cache/{cfg.model_type}.pkl")
     groups = torch.tensor(pd.get_dummies(data[cfg.experiment.dataset.columns]).values, dtype=torch.float32)
-    data['residuals'] = data['target'] - data['prediction']
+    data['residuals'] = data['target'] - data['f']
     d = groups.shape[1]
     n = len(data)
 
@@ -44,7 +44,7 @@ def main(cfg):
     loss_fn = nn.BCELoss(reduction='sum')
 
 # Initialize the Viscosity Gradient Descent optimizer
-    optimizer = VGD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=cfg.experiment.optimizer.viscosity)
+    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=cfg.experiment.optimizer.viscosity)
 
 # Training loop
     thetas = torch.zeros(n+1, d)

@@ -71,5 +71,5 @@ y_predict_proba = np.concatenate(y_predict_proba)
 
 # Save the X_test, y_test, y_predict_proba as a dataframe, with the original columns plus 'target' and 'prediction' columns
 os.makedirs('./.cache', exist_ok=True)
-df = pd.DataFrame(np.column_stack([X_test, y_test, y_predict_proba]), columns=list(X_test.columns) + ['target', 'prediction'])
+df = pd.DataFrame(np.column_stack([X_test, y_test, y_predict_proba]), columns=list(X_test.columns) + ['target', 'f'])
 df.to_pickle(f"./.cache/{classifier}.pkl")
