@@ -5,7 +5,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../', 'core'))
 import numpy as np
 import torch
 import torch.nn as nn
-import pdb
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -43,7 +42,8 @@ def main(cfg):
         xs = torch.ones(len(data),1)
     data['residuals'] = data['length_of_stay_float'] - data['f']
     d = xs.shape[1]
-    data = data.tail(20000)
+    #burnin_end = data[data.f > 0].index.min()
+    data = data.tail(100000)#loc[burnin_end:]
     n = len(data)
 
 # Initialize the simple model
@@ -52,7 +52,7 @@ def main(cfg):
 # Define the mean squared error loss
     loss_fn = nn.MSELoss(reduction='sum')
 
-# Initialize the Viscosity Gradient Descent optimizer
+# Initialize the Gradient Descent optimizer
     optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=cfg.experiment.optimizer.viscosity)
 
 # Training loop
@@ -67,7 +67,7 @@ def main(cfg):
 
     model = model.to(device)
 
-    for t in range(len(data)):
+    for t in tqdm(range(len(data))):
         # Set up data
         x_t = xs[t]
         y_t = torch.tensor(data['length_of_stay_float'].iloc[t], dtype=torch.float32)

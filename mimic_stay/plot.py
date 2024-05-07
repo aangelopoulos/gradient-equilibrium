@@ -11,7 +11,7 @@ import itertools
 
 # %%
 # Flags
-experiment_name = "gradient_boosting_nomodel"
+experiment_name = "nomodel_ethnicity_marital"
 show_f=False
 show_viscosity=False
 save=True
@@ -21,7 +21,7 @@ default_viscosity = 0
 # Read data
 experiment_folder = "./.cache/" + experiment_name + "/"
 df = pd.concat([
-    pd.read_pickle(experiment_folder + f).tail(20000) for f in os.listdir(experiment_folder)
+    pd.read_pickle(experiment_folder + f) for f in os.listdir(experiment_folder)
 ], ignore_index=True)
 df['norm of avg grad'] = df['average gradient'].apply(np.linalg.norm, ord=np.inf)
 # Find index of first nonzero gradient
@@ -96,11 +96,12 @@ for i in range(len(dfs_to_plot)):
         for u in uniques[j]: 
             _df_subset = _df[_df[categorical_cols[j]] == u]
             gradients = np.array(_df_subset.gradient.to_list())
-            average_gradient = gradients.cumsum(axis=0)/(np.arange(len(gradients))+1)[:,None]
+            time = np.arange(len(gradients))+1
+            average_gradient = gradients.cumsum(axis=0)/time[:,None]
             norm_average_gradient = np.linalg.norm(average_gradient, axis=1, ord=np.inf)
-            _lp = sns.lineplot(ax=axs[i,j], x=_df_subset.admittime, y=norm_average_gradient, label=u.lower().split('/')[0], estimator=None, n_boot=0)
+            _lp = sns.lineplot(ax=axs[i,j], x=time, y=norm_average_gradient, label=u.lower().split('/')[0], estimator=None, n_boot=0)
             axs[0,j].set_title(categorical_cols[j].lower().replace("_"," "))
-            axs[-1,j].set_xlabel("patient admission date")
+            axs[-1,j].set_xlabel("# patients seen")
             axs[i,0].set_ylabel(f"norm of avg grad\n ({list(dfs_to_plot.keys())[i]})")
             for tick in axs[i,j].get_xticklabels():
                 tick.set_rotation(45)  # adjust the rotation angle as needed
