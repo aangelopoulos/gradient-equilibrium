@@ -1,0 +1,6 @@
+defaults:
+  - _self_
+
+optimizer:
+  lr: 0.05
+  viscosity: 0

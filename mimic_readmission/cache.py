@@ -6,7 +6,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.utils import check_array
 from tqdm import tqdm
@@ -83,17 +83,17 @@ df = df.reset_index().drop("index", axis=1)
 
 # %%
 
-regressor = "gradient_boosting"
-if regressor == "gradient_boosting":
-    regressor_function = HistGradientBoostingRegressor(max_depth=20)
-elif regressor == "logistic_regression":
-    regressor_function = LogisticRegression(max_iter=10)
+classifier = "gradient_boosting"
+if classifier == "gradient_boosting":
+    classifier_function = HistGradientBoostingClassifier(max_depth=20)
+elif classifier == "logistic_regression":
+    classifier_function = LogisticRegression(max_iter=10)
 else:
-    raise ValueError(f"Invalid regrssor: {regressor}")
+    raise ValueError(f"Invalid classifier: {classifier}")
 
 # Separate features and target
-X_test = df.drop(['length_of_stay_float', 'mortality', 'readmission', 'admittime', 'dischtime', 'dischtime_float', 'admittime_float', 'length_of_stay'], axis=1)
-y_test = df['length_of_stay_float']
+X_test = df.drop(['length_of_stay_float', 'admittime', 'dischtime', 'mortality', 'readmission', 'dischtime_float', 'admittime_float', 'length_of_stay'], axis=1)
+y_test = df['readmission']
 
 # Identify numeric and categorical columns
 numeric_features = X_test.select_dtypes(include=['int64', 'float64']).columns
@@ -119,10 +119,10 @@ preprocessor = ColumnTransformer(
         ('cat', categorical_transformer, categorical_features)],
         remainder='passthrough')
 
-# Create a pipeline with preprocessor and a regressor
+# Create a pipeline with preprocessor and a classifier
 model = Pipeline(steps=[
     ('preprocessor', preprocessor),
-    ('regressor', regressor_function)])
+    ('classifier', classifier_function)])
 
 # Fine-tune the model online using a growing dataset
 fs = []
@@ -136,7 +136,7 @@ for i in tqdm(range(10)):
     _y_train = y_test[:idx]
     
     model.fit(_X_train, _y_train)
-    preds = model.predict(X_test[idx:idxs[i+1]])
+    preds = model.predict_proba(X_test[idx:idxs[i+1]])[:,1]
     preds_mse = np.mean(np.square(preds-y_test[idx:idxs[i+1]]))
     mean_mse = np.mean(np.square(y_test[idx:idxs[i+1]].mean()-y_test[idx:idxs[i+1]]))
     print(i, preds_mse, mean_mse)
@@ -150,5 +150,5 @@ fs = np.concatenate([np.zeros(len(X_test) - len(fs)), fs])
 os.makedirs('./.cache', exist_ok=True)
 df['f'] = fs
 print(df)
-df.to_pickle(f"./.cache/{regressor}.pkl")
+df.to_pickle(f"./.cache/{classifier}.pkl")
 # %%
