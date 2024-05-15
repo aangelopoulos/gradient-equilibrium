@@ -23,7 +23,7 @@ def set_randomness(seed=0):
     torch.cuda.manual_seed_all(seed)
 
 
-@hydra.main(config_path='configs', config_name='nomodel_interceptonly', version_base="1.3.2")
+@hydra.main(config_path='configs', config_name='nomodel_ethnicity_marital', version_base="1.3.2")
 def main(cfg):
 # Get job ID
     hydra_cfg = HydraConfig.get()
@@ -40,7 +40,7 @@ def main(cfg):
         xs = torch.tensor(pd.get_dummies(data[cfg.experiment.dataset.columns]).values.astype(float), dtype=torch.float32)
     else:
         xs = torch.ones(len(data),1)
-    data['residuals'] = (data['readmission'] != ( data['f'] > 0.5 )).astype(int)
+    data['residuals'] = (data['readmission'] - data['f'] + 1) / 2
     d = xs.shape[1]
     #burnin_end = data[data.f > 0].index.min()
     data = data.tail(100000)#loc[burnin_end:]
@@ -64,6 +64,8 @@ def main(cfg):
 
     model = model.to(device)
 
+    loss_fn = nn.BCELoss()
+
     for t in tqdm(range(len(data))):
         # Set up data
         x_t = xs[t]
@@ -77,15 +79,14 @@ def main(cfg):
         prediction = torch.clamp(model(x_t.to(device)),min=0.01, max=0.99)
         r_t = r_t.to(device)
         prediction.squeeze()
-        loss = r_t*torch.clamp(prediction.log(), min=-100) + (1-r_t)*torch.clamp((1-prediction).log(), min=-100)
-        loss.retain_grad()
+        loss = loss_fn(prediction, r_t)
         loss.backward()
         optimizer.step()
 
         # Store results
         ys[t+1] = y_t.detach().cpu()
         fs[t+1] = f_t
-        yhats[t+1] = 1-f_t if prediction > 0.5 else f_t
+        yhats[t+1] = (prediction * 2) - 1 + f_t
         losses[t+1] = loss.detach().cpu().item()
         gradients[t+1] = model.theta.grad.detach().cpu()
         average_gradients[t+1] = gradients[:t+1].mean(dim=0)
