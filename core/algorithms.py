@@ -40,6 +40,16 @@ class GD(torch.optim.Optimizer):
 
         return loss
 
+# Simple debiasing model
+class DebiasingModel(nn.Module):
+    def __init__(self, theta0):
+        super(DebiasingModel, self).__init__()
+        self.d = theta0.shape[0]
+        self.theta = nn.Parameter(theta0)
+
+    def forward(self):
+        return self.theta
+
 # OLS model
 class OLSModel(nn.Module):
     def __init__(self, theta0):
