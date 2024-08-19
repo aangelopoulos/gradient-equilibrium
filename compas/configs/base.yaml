@@ -1,0 +1,12 @@
+defaults:
+  - /experiment/default
+  - override hydra/launcher: joblib
+  - _self_
+
+experiment_name: base
+
+hydra:
+  sweeper:
+    params:
+      experiment.optimizer.lr: 0, 0.001, 0.01, 0.05
+      experiment.optimizer.viscosity: 0,0.1,0.5,0.9
