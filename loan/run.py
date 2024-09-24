@@ -33,7 +33,7 @@ def main(cfg):
 # Load the data
     data = pd.read_pickle(f"./.cache/{cfg.model_type}.pkl")
     groups = torch.tensor(pd.get_dummies(data[cfg.experiment.dataset.columns]).values, dtype=torch.float32)
-    data['residuals'] = data['target'] - data['f']
+    data['residuals'] = data['target'] - data['prediction']
     d = groups.shape[1]
     n = len(data)
 
@@ -41,17 +41,20 @@ def main(cfg):
     model = LogisticModel(torch.zeros((d,)))
 
 # Define the mean squared error loss
-    loss_fn = nn.BCELoss(reduction='sum')
+    loss_fn = nn.MSELoss(reduction='sum')
 
-# Initialize the Viscosity Gradient Descent optimizer
-    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=cfg.experiment.optimizer.viscosity)
+# Initialize the Gradient Descent optimizer
+    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr)
 
 # Training loop
     thetas = torch.zeros(n+1, d)
     ys = torch.zeros(n+1)
     gs = torch.zeros(n+1, d)
+    fs = torch.zeros(n+1)
     gradients = torch.zeros(n+1, d)
+    losses = torch.zeros(n+1)
     average_gradients = torch.zeros(n+1, d)
+    average_loss = torch.zeros(n+1, d)
 
     model = model.to(device)
 
@@ -63,7 +66,8 @@ def main(cfg):
         optimizer.zero_grad()
         thetas[t+1] = model.theta.detach().cpu()
         prediction = model(g_t.to(device))
-        loss = 0.5*loss_fn(prediction.squeeze(), y_t.to(device).squeeze())
+        fs[t+1] = prediction.detach().cpu()
+        loss = 0.5*loss_fn(prediction, y_t.to(device).squeeze())
         loss.backward()
         optimizer.step()
         ys[t+1] = y_t.detach().cpu()
@@ -71,13 +75,10 @@ def main(cfg):
         gradients[t+1] = model.theta.grad.detach().cpu()
         average_gradients[t+1] = gradients[:t+1].mean(dim=0)
 
-    print(average_gradients)
-
 # Cache the thetas, ys, gradients, and norms in a pandas dictionary
     os.makedirs('.cache/' + cfg.experiment_name, exist_ok=True)
     df = pd.DataFrame({'theta': thetas.tolist(), 'y': ys.tolist(), 'g': gs.tolist(), 'gradient': gradients.tolist(), 'average_gradient': average_gradients.tolist()})
     df['lr'] = cfg.experiment.optimizer.lr
-    df['viscosity'] = cfg.experiment.optimizer.viscosity
     df['d'] = d
     df.to_pickle('.cache/' + cfg.experiment_name + '/' + job_id + '.pkl')
 

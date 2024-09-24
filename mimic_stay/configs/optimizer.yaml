@@ -3,4 +3,3 @@ defaults:
 
 optimizer:
   lr: 0.000000001
-  viscosity: 0

@@ -65,8 +65,8 @@ def main(cfg):
 # Define the mean squared error loss
     loss_fn = nn.MSELoss(reduction='sum')
 
-# Initialize the Viscosity Gradient Descent optimizer
-    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=cfg.experiment.optimizer.viscosity)
+# Initialize the Gradient Descent optimizer
+    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr)
 # Prepare the experiment
     loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
 
@@ -92,7 +92,6 @@ def main(cfg):
     os.makedirs('.cache/' + cfg.experiment_name, exist_ok=True)
     df = pd.DataFrame({'theta': thetas.tolist(), 'y': ys.tolist(), 'gradient': gradients.tolist(), 'average_gradient': average_gradients.tolist()})
     df['lr'] = cfg.experiment.optimizer.lr
-    df['viscosity'] = cfg.experiment.optimizer.viscosity
     df['distribution_shift_speed'] = cfg.experiment.dataset.distribution_shift_speed
     df['d'] = cfg.experiment.dataset.d
     df['size'] = cfg.experiment.dataset.size

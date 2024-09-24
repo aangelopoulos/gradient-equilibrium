@@ -56,8 +56,8 @@ def main(cfg):
 # Define the mean squared error loss
     loss_fn = nn.MSELoss(reduction='sum')
 
-# Initialize the Viscosity Gradient Descent optimizer
-    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=cfg.experiment.optimizer.viscosity)
+# Initialize the Gradient Descent optimizer
+    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr)
 
 # Training loop
     thetas = torch.zeros(cfg.experiment.dataset.size+1, cfg.experiment.dataset.d)
@@ -86,7 +86,6 @@ def main(cfg):
     df = pd.DataFrame({'theta': thetas.tolist(), 'y': ys.tolist(), 'g': gs.tolist(), 'gradient': gradients.tolist(), 'average_gradient': average_gradients.tolist()})
     df['lr'] = cfg.experiment.optimizer.lr
     df['By'] = cfg.experiment.dataset.By
-    df['viscosity'] = cfg.experiment.optimizer.viscosity
     df['d'] = cfg.experiment.dataset.d
     df['size'] = cfg.experiment.dataset.size
     df.to_pickle('.cache/' + cfg.experiment_name + '/' + job_id + '.pkl')

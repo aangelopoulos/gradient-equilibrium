@@ -11,7 +11,7 @@ import itertools
 
 # %%
 # Flags
-experiment_name = "nomodel_ethnicity_marital"
+experiment_name = "gradient_boosting_sex_familystatus"
 show_f=False
 save=True
 show=False
@@ -21,9 +21,9 @@ experiment_folder = "./.cache/" + experiment_name + "/"
 df = pd.concat([
     pd.read_pickle(experiment_folder + f) for f in os.listdir(experiment_folder)
 ], ignore_index=True)
-df['norm of avg grad'] = df['average gradient'].apply(np.linalg.norm, ord=np.inf)
-# Find index of first nonzero gradient
-df = df[df.admittime > df[df['norm of avg grad'] != 0].admittime.min()]
+
+# %%
+df['norm of avg grad'] = df['average_gradient'].apply(np.linalg.norm, ord=np.inf)
 
 # Create a color scale for the lr
 lr_cmap_log = plt.colormaps["Oranges"]
@@ -36,20 +36,20 @@ sns.set_context("poster")
 sns.set_palette("pastel")
 
 # %%
+
+df.columns
+
+# %%
 fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(30,5), sharex=True, sharey=False)
 
 # First, plot the ys, fs, and yhats on the same plot, to visually check the predictions.
-sns.lineplot(ax=axs[0], data=df[df.lr == 0], x="admittime", y="y", color="#888888", estimator=None, n_boot=0)
-_lp = sns.lineplot(ax=axs[0], data=df, x="admittime", y="yhat", hue="lr", palette=lr_cmap, estimator=None, n_boot=0)
-if show_f:
-    axs[0].plot(df.f, color="#880000")
-_lp.get_legend().remove()
+sns.lineplot(ax=axs[0], data=df[df.lr == 0], x=df[df.lr == 0].index, y="y", color="#888888", estimator=None, n_boot=0)
 
 # Next, plot the average gradient over time
-_lp = sns.lineplot(ax=axs[1], data=df, x="admittime", y="norm of avg grad", hue="lr", palette=lr_cmap, estimator=None, n_boot=0)
+_lp = sns.lineplot(ax=axs[1], data=df, x=df.index, y="norm of avg grad", hue="lr", palette=lr_cmap, estimator=None, n_boot=0)
 _lp.get_legend().remove()
 # Next, plot the average loss over time
-_lp = sns.lineplot(ax=axs[2], data=df, x="admittime", y="average loss", hue="lr", palette=lr_cmap, estimator=None, n_boot=0)
+_lp = sns.lineplot(ax=axs[2], data=df, x=df.index, y="average loss", hue="lr", palette=lr_cmap, estimator=None, n_boot=0)
 _lp.get_legend().set_loc('upper right')
 
 for tick in axs[0].get_xticklabels() + axs[1].get_xticklabels() + axs[2].get_xticklabels():

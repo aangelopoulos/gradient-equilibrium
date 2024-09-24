@@ -83,8 +83,8 @@ def main(cfg):
 # Define the mean squared error loss
     loss_fn = nn.MSELoss(reduction='sum')
 
-# Initialize the Viscosity Gradient Descent optimizer
-    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=cfg.experiment.optimizer.viscosity)
+# Initialize the Gradient Descent optimizer
+    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr)
 
 # Prepare the experiment
     loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False)
@@ -112,13 +112,11 @@ def main(cfg):
         gs[t] = g_t.detach().cpu()
         gradients[t] = model.theta.grad.detach().cpu()
         average_gradients[t] = gradients[:t+1].mean(dim=0)
-        #print(f"lr={cfg.experiment.optimizer.lr}, viscosity={cfg.experiment.optimizer.viscosity}, t={t}, loss={loss.item()}, theta={model.theta.detach().cpu().numpy()}, gradient={model.theta.grad.detach().cpu().numpy()}")
 
 # Cache the thetas, ys, gradients, and norms in a pandas dictionary
     os.makedirs('.cache/' + cfg.experiment_name, exist_ok=True)
     df = pd.DataFrame({'theta': thetas.tolist(), 'y': ys.tolist(), 'yhat': yhats.tolist(), 'g': gs.tolist(), 'gradient': gradients.tolist(), 'average_gradient': average_gradients.tolist()})
     df['lr'] = cfg.experiment.optimizer.lr
-    df['viscosity'] = cfg.experiment.optimizer.viscosity
     df['d'] = cfg.experiment.dataset.d
     df['size'] = cfg.experiment.dataset.size
     df['trend_period'] = cfg.experiment.dataset.trend_period
