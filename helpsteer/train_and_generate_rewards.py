@@ -11,13 +11,13 @@ import wandb
 # Configuration
 config = {
     'model_name': 'Ray2333/GRM-gemma2-2B-rewardmodel-ft',
-    'max_length': 100,
+    'max_length': 1024,
     'batch_size': 2,
-    'learning_rate': 2.0e-6,
+    'learning_rate': 2.0e-4,
     'num_epochs': 1,
-    'warmup_steps': 100,
+    'warmup_steps': 0,
     'device': 'cuda:0' if torch.cuda.is_available() else 'cpu',
-    'gradient_accumulation_steps': 8
+    'gradient_accumulation_steps': 1
 }
 
 # Initialize wandb for experiment tracking
@@ -64,8 +64,11 @@ def train_epoch(model, train_loader, tokenizer, optimizer, scheduler, config):
         )
 
         predictions = outputs['logits'].squeeze(-1)
+        print(predictions)
+        print(labels)
         loss = torch.nn.functional.mse_loss(predictions, labels)
         loss = loss / config['gradient_accumulation_steps']
+        print(loss)
         loss.backward()
         
         if (step + 1) % config['gradient_accumulation_steps'] == 0 or (step + 1) == len(train_loader): # Data might not be divisable by batch size, so we optim step on last step.:
@@ -105,7 +108,7 @@ def evaluate(model, eval_loader, tokenizer, config):
             all_predictions.extend(predictions)
             all_labels.extend(labels)
     
-        mse = F.mse_loss(all_predictions, all_labels)
+        mse = F.mse_loss(torch.tensor(all_predictions), torch.tensor(all_labels))
     return mse, all_predictions
 
 def main():
@@ -121,8 +124,9 @@ def main():
         
     print("Loading dataset...")
     train_data = load_dataset("nvidia/HelpSteer2", split='train')
+    train_data = train_data.select(range(500))
     eval_data = load_dataset("nvidia/HelpSteer2", split='validation')
-    
+
     train_loader = DataLoader(
         train_data,
         batch_size=config['batch_size'],
@@ -163,11 +167,11 @@ def main():
         
         if mse < best_mse:
             best_mse = mse
-            model.save_pretrained("best_model")
+            #model.save_pretrained("best_model")
             print("Saved best model!")
     
     # Save final predictions
-    eval_df = eval_data.to_pandas()
+    eval_df = pd.DataFrame(eval_data)
     eval_df['rm_rewards'] = predictions
     eval_df.to_json("rewards.json", orient='records', indent=1)
     

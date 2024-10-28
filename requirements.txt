@@ -11,3 +11,4 @@ tqdm
 pandas
 seaborn
 matplotlib
+accelerate
