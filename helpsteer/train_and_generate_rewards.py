@@ -1,7 +1,7 @@
 import torch
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, get_linear_schedule_with_warmup
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, get_linear_schedule_with_warmup, Gemma2ForSequenceClassification
 from datasets import load_dataset
 from tqdm import tqdm
 import numpy as np
@@ -11,13 +11,13 @@ import wandb
 # Configuration
 config = {
     'model_name': 'Ray2333/GRM-gemma2-2B-rewardmodel-ft',
-    'max_length': 2048,
-    'batch_size': 8,
-    'learning_rate': 2e-5,
+    'max_length': 100,
+    'batch_size': 2,
+    'learning_rate': 2.0e-6,
     'num_epochs': 1,
     'warmup_steps': 100,
     'device': 'cuda:0' if torch.cuda.is_available() else 'cpu',
-    'gradient_accumulation_steps': 4
+    'gradient_accumulation_steps': 8
 }
 
 # Initialize wandb for experiment tracking
@@ -46,26 +46,31 @@ def prepare_input(batch, tokenizer, config):
 
 def train_epoch(model, train_loader, tokenizer, optimizer, scheduler, config):
     model.train()
-    total_loss = 0
+    total_loss = 0.0
     optimizer.zero_grad()
     
-    progress_bar = tqdm(train_loader, desc="Training")
+    progress_bar = tqdm(train_loader, desc="Training", total=len(train_loader))
     
     for step, batch in enumerate(progress_bar):
         inputs = prepare_input(batch, tokenizer, config)
         inputs = {k: v.to(config['device']) for k, v in inputs.items()}
-        labels = torch.tensor(batch['helpfulness'], dtype=torch.float).to(config['device'])
+        # Keep labels in float32 for better stability
+        labels = torch.tensor(batch['helpfulness'], dtype=torch.float32).to(config['device'])
+
         
         outputs = model(
-            input_ids=inputs['input_ids'],
+            input_ids=inputs['input_ids'].long(),
             attention_mask=inputs['attention_mask']
         )
-        
-        loss = torch.nn.functional.mse_loss(outputs[0].squeeze(), labels)
+
+        predictions = outputs['logits'].squeeze(-1)
+        loss = torch.nn.functional.mse_loss(predictions, labels)
         loss = loss / config['gradient_accumulation_steps']
         loss.backward()
         
-        if (step + 1) % config['gradient_accumulation_steps'] == 0 or (step + 1) == len(train_loader): # Data might not be divisable by batch size, so we optim step on last step.
+        if (step + 1) % config['gradient_accumulation_steps'] == 0 or (step + 1) == len(train_loader): # Data might not be divisable by batch size, so we optim step on last step.:
+            # Clip gradients for stability
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             scheduler.step()
             optimizer.zero_grad()
@@ -100,7 +105,7 @@ def evaluate(model, eval_loader, tokenizer, config):
             all_predictions.extend(predictions)
             all_labels.extend(labels)
     
-    mse = F.mse_loss(all_predictions, all_labels)
+        mse = F.mse_loss(all_predictions, all_labels)
     return mse, all_predictions
 
 def main():
@@ -110,11 +115,10 @@ def main():
     print("Loading model...")
     model = AutoModelForSequenceClassification.from_pretrained(
         config['model_name'],
-        torch_dtype=torch.float16,
+        torch_dtype=torch.float32,
         device_map=config['device'],
-        num_labels=1  # Regression task
     )
-    
+        
     print("Loading dataset...")
     train_data = load_dataset("nvidia/HelpSteer2", split='train')
     eval_data = load_dataset("nvidia/HelpSteer2", split='validation')
@@ -132,7 +136,7 @@ def main():
     )
     
     # Optimizer and scheduler setup
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'])
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'], weight_decay=0.0)
     num_training_steps = len(train_loader) * config['num_epochs']
     scheduler = get_linear_schedule_with_warmup(
         optimizer,

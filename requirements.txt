@@ -1,0 +1,13 @@
+wandb
+numpy
+torch
+torchvision
+torchaudio
+scikit-learn
+wandb
+transformers
+datasets
+tqdm
+pandas
+seaborn
+matplotlib
