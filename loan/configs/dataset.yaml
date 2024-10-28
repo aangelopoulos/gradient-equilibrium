@@ -1,5 +1,0 @@
-defaults:
-  - _self_
-
-dataset:
-  columns: ['CODE_GENDER']
