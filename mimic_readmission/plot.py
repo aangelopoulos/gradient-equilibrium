@@ -11,11 +11,11 @@ import itertools
 
 # %%
 # Flags
-experiment_name = "nomodel_ethnicity_marital"
+experiment_name = "gradient_boosting_ethnicity_marital"
 show_f=False
 show_viscosity=False
-save=True
-show=False
+save=False
+show=True
 default_viscosity = 0
 
 # Read data
@@ -69,6 +69,47 @@ plt.tight_layout()
 
 if save:
     plt.savefig('./plots/' + experiment_name + "/" + "series.pdf")
+if show:
+    plt.show()
+
+# %%
+fig = plt.figure(figsize=(10,5))
+
+# Since we are running logistic regression, plot the average of ys over time as well as the average of yhats
+df = df.sort_values(by=['lr', 'viscosity', 'admittime'])
+df['average_y'] = df.groupby(['lr', 'viscosity'])['y'].transform(lambda x: x.cumsum() / np.arange(1, len(x)+1))
+df['average_yhat'] = df.groupby(['lr', 'viscosity'])['yhat'].transform(lambda x: x.cumsum() / np.arange(1, len(x)+1))
+
+_lp = sns.lineplot(
+    ax=plt.gca(),
+    data=df[df.viscosity==default_viscosity],
+    x="admittime",
+    y="average_yhat",
+    hue="lr",
+    palette=lr_cmap,
+    estimator=None, 
+    n_boot=0
+)
+
+# Add average_y as a dotted #888888 line
+sns.lineplot(
+    ax=plt.gca(), 
+    data=df[(df.viscosity==default_viscosity) & (df.lr==df.lr.min())], 
+    x="admittime", 
+    y="average_y", 
+    color="#888888", 
+    linestyle="--", 
+    estimator=None, 
+    n_boot=0,
+    label="average y"
+)
+sns.despine(top=True, right=True)
+plt.xlabel("patient admission date")
+plt.ylabel("average prediction")
+plt.tight_layout()
+
+if save:
+    plt.savefig('./plots/' + experiment_name + "/" + "equilibrium.pdf")
 if show:
     plt.show()
 
