@@ -13,11 +13,11 @@ config = {
     'model_name': 'Ray2333/GRM-gemma2-2B-rewardmodel-ft',
     'max_length': 1024,
     'batch_size': 2,
-    'learning_rate': 2.0e-4,
+    'learning_rate': 2.0e-5,
     'num_epochs': 1,
     'warmup_steps': 0,
     'device': 'cuda:0' if torch.cuda.is_available() else 'cpu',
-    'gradient_accumulation_steps': 1
+    'gradient_accumulation_steps': 4
 }
 
 # Initialize wandb for experiment tracking
@@ -124,7 +124,6 @@ def main():
         
     print("Loading dataset...")
     train_data = load_dataset("nvidia/HelpSteer2", split='train')
-    train_data = train_data.select(range(500))
     eval_data = load_dataset("nvidia/HelpSteer2", split='validation')
 
     train_loader = DataLoader(
@@ -167,7 +166,7 @@ def main():
         
         if mse < best_mse:
             best_mse = mse
-            #model.save_pretrained("best_model")
+            model.save_pretrained("best_model")
             print("Saved best model!")
     
     # Save final predictions
