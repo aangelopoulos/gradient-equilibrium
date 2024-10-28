@@ -52,7 +52,7 @@ def main(cfg):
     model = OLSModel(torch.zeros((d,)))
 
     # Initialize the Gradient Descent optimizer
-    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=0)
+    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -121,7 +121,6 @@ def main(cfg):
     })
 
     save_df['lr'] = float(cfg.experiment.optimizer.lr)
-    save_df['viscosity'] = cfg.experiment.optimizer.viscosity
     save_df['d'] = d
     save_df.to_pickle('.cache/' + cfg.experiment_name + '/' + job_id + '.pkl')
 

@@ -7,15 +7,21 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pdb
 
-# Define the gradient descent optimizer with telescoping ridge penalty
+# Define the gradient descent optimizer
 class GD(torch.optim.Optimizer):
-    def __init__(self, params, lr=1e-3, viscosity=0.9):
+    def __init__(self, params, lr=1e-3, penalty_type=None, lambda_=0.0, alpha=0):
         if lr < 0.0:
             raise ValueError("Invalid learning rate: {}".format(lr))
-        if viscosity < 0 or viscosity > 1:
-            raise ValueError("Invalid viscosity value: {}".format(viscosity))
+        if penalty_type not in (None, 'L1', 'L2'):
+            raise ValueError("Invalid penalty type: {}".format(penalty_type))
+        if lambda_ < 0.0:
+            raise ValueError("Invalid penalty level (lambda): {}".format(lambda_))
+        if not (0 <= alpha <= 1.0):
+            raise ValueError("Alpha must be in the range [0, 1.0].")
 
-        defaults = dict(lr=lr, viscosity=viscosity)
+        # Store initial learning rate separately to apply decay formula
+        self.global_step = 0
+        defaults = dict(lr=lr, initial_lr=lr, penalty_type=penalty_type, lambda_=lambda_, alpha=alpha)
         super(GD, self).__init__(params, defaults)
 
     @torch.no_grad()
@@ -27,16 +33,27 @@ class GD(torch.optim.Optimizer):
                 loss = closure()
 
         for group in self.param_groups:
+            lr = group['initial_lr']
+            alpha = group['alpha']
+
+            # Decay the learning rate proportional to 1 / t^alpha
+            self.global_step += 1
+            decayed_lr = lr / (self.global_step ** alpha)
+            group['lr'] = decayed_lr
+
             for p in group['params']:
                 if p.grad is None:
                     continue
-                d_p = p.grad
-                if 'prev_iterate' not in self.state[p]:
-                    self.state[p]['prev_iterate'] = p.data
 
-                prev_iterate = self.state[p]['prev_iterate']
-                self.state[p]['prev_iterate'] = p.data
-                p.data = (p.data * (1 - group['viscosity'])) + (prev_iterate * group['viscosity']) - group['lr'] * d_p
+                d_p = p.grad
+
+                # L1 or L2 regularization
+                if group['penalty_type'] == 'L2':
+                    d_p = d_p + group['lambda_'] * p.data
+                elif group['penalty_type'] == 'L1':
+                    d_p = d_p + group['lambda_'] * p.data.sign()
+
+                p.data = p.data - group['lr'] * d_p
 
         return loss
 

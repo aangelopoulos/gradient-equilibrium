@@ -53,7 +53,7 @@ def main(cfg):
     loss_fn = nn.MSELoss(reduction='sum')
 
 # Initialize the Gradient Descent optimizer
-    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr, viscosity=cfg.experiment.optimizer.viscosity)
+    optimizer = GD(model.parameters(), lr=cfg.experiment.optimizer.lr)
 
 # Training loop
     thetas = torch.zeros(n+1, d, dtype=torch.float32)
@@ -109,7 +109,6 @@ def main(cfg):
             df.loc[1:,col] = data[col].values
 
     df['lr'] = float(cfg.experiment.optimizer.lr)
-    df['viscosity'] = cfg.experiment.optimizer.viscosity
     df['d'] = d
     df.to_pickle('.cache/' + cfg.experiment_name + '/' + job_id + '.pkl')
 

@@ -13,10 +13,8 @@ import itertools
 # Flags
 experiment_name = "gradient_boosting_ethnicity_marital"
 show_f=False
-show_viscosity=False
-save=False
-show=True
-default_viscosity = 0
+save=True
+show=False
 
 # Read data
 experiment_folder = "./.cache/" + experiment_name + "/"
@@ -26,9 +24,6 @@ df = pd.concat([
 df['norm of avg grad'] = df['average gradient'].apply(np.linalg.norm, ord=np.inf)
 # Find index of first nonzero gradient
 df = df[df.admittime > df[df['norm of avg grad'] != 0].admittime.min()]
-
-if not show_viscosity:
-    df = df[df.viscosity==default_viscosity]
 
 # Create a color scale for the lr
 lr_cmap_log = plt.colormaps["Oranges"]
@@ -44,7 +39,7 @@ sns.set_palette("pastel")
 fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(30,5), sharex=True, sharey=False)
 
 # First, plot the ys, fs, and yhats on the same plot, to visually check the predictions.
-sns.lineplot(ax=axs[0], data=df[(df.lr == 0) & (df.viscosity == default_viscosity)], x="admittime", y="y", color="#888888", estimator=None, n_boot=0)
+sns.lineplot(ax=axs[0], data=df[df.lr == 0], x="admittime", y="y", color="#888888", estimator=None, n_boot=0)
 _lp = sns.lineplot(ax=axs[0], data=df, x="admittime", y="yhat", hue="lr", palette=lr_cmap, estimator=None, n_boot=0)
 if show_f:
     axs[0].plot(df.f, color="#880000")
@@ -125,8 +120,8 @@ uniques = [ df[col].unique() for col in categorical_cols ]
 # %%
 # Create a subplot per sensitive category, and plot the bias in each
 dfs_to_plot = {
-    "lr=0": df[(df.lr == df.lr.min()) & (df.viscosity == default_viscosity)],
-    f"lr={df.lr.max()}": df[(df.lr == df.lr.max()) & (df.viscosity == default_viscosity)],
+    "lr=0": df[df.lr == df.lr.min()],
+    f"lr={df.lr.max()}": df[df.lr == df.lr.max()],
 }
 
 fig, axs = plt.subplots(nrows=len(dfs_to_plot), ncols=len(categorical_cols), figsize=(10*len(categorical_cols), 5*len(dfs_to_plot)), sharey=True, sharex=True)

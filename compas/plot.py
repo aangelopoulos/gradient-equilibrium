@@ -13,10 +13,8 @@ import itertools
 # Flags
 experiment_name = "base"
 show_f=False
-show_viscosity=False
 save=True
 show=False
-default_viscosity = 0
 
 # Read data
 experiment_folder = "./.cache/" + experiment_name + "/"
@@ -24,9 +22,6 @@ df = pd.concat([
     pd.read_pickle(experiment_folder + f) for f in os.listdir(experiment_folder)
 ], ignore_index=True)
 df['norm of avg grad'] = df['average gradient'].apply(np.linalg.norm, ord=np.inf)
-
-if not show_viscosity:
-    df = df[df.viscosity==default_viscosity]
 
 # Create a color scale for the lr
 lr_cmap_log = plt.colormaps["Oranges"]
@@ -42,7 +37,7 @@ sns.set_palette("pastel")
 fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(30,5), sharex=True, sharey=False)
 
 # First plot
-sns.lineplot(ax=axs[0], data=df[(df.lr == 0) & (df.viscosity == default_viscosity)], x="race count", y="y", color="#888888", estimator=None, n_boot=0)
+sns.lineplot(ax=axs[0], data=df[df.lr == 0], x="race count", y="y", color="#888888", estimator=None, n_boot=0)
 _lp = sns.lineplot(ax=axs[0], data=df, x="race count", y="yhat", hue="lr", palette=lr_cmap, estimator=None, n_boot=0)
 if show_f:
     axs[0].plot(np.arange(len(df)), df.f, color="#880000")
@@ -81,8 +76,8 @@ df = df.dropna()
 # %%
 # Create a subplot per sensitive category, and plot the bias in each
 dfs_to_plot = {
-    "lr=0": df[(df.lr == 0) & (df.viscosity == default_viscosity)],
-    f"lr={0.05}": df[(df.lr == 0.05) & (df.viscosity == default_viscosity)],
+    "lr=0": df[df.lr == 0],
+    f"lr={0.05}": df[df.lr == 0.05],
 }
 
 fig, axs = plt.subplots(nrows=1, ncols=len(dfs_to_plot), figsize=(10*len(dfs_to_plot), 5*len(categorical_cols)), sharey=True, sharex=True)
