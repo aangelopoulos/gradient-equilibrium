@@ -65,9 +65,9 @@ with torch.no_grad():
             continue
 
 df = data.to_pandas()
-df['rm_rewards'] = rewards
+df['rm_reward'] = rewards
 
 # Remove any None values before saving
-df = df.dropna(subset=['rm_rewards'])
+df = df.dropna(subset=['rm_reward'])
 
 df.to_json("rewards.json", orient='records', indent=1)

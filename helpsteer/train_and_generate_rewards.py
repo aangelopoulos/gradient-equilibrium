@@ -171,7 +171,7 @@ def main():
     
     # Save final predictions
     eval_df = pd.DataFrame(eval_data)
-    eval_df['rm_rewards'] = predictions
+    eval_df['rm_reward'] = predictions
     eval_df.to_json("rewards.json", orient='records', indent=1)
     
     wandb.finish()
