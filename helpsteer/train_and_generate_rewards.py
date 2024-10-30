@@ -17,7 +17,7 @@ config = {
     'num_epochs': 1,
     'warmup_steps': 0,
     'device': 'cuda:0' if torch.cuda.is_available() else 'cpu',
-    'gradient_accumulation_steps': 4
+    'gradient_accumulation_steps': 4 # Should probably up this to like 64
 }
 
 # Initialize wandb for experiment tracking
