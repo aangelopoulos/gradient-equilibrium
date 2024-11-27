@@ -72,7 +72,7 @@ class ExpGD(torch.optim.Optimizer):
         # Store initial learning rate separately to apply decay formula
         self.global_step = 0
         defaults = dict(lr=lr, initial_lr=lr, penalty_type=penalty_type, lambda_=lambda_, alpha=alpha)
-        super(GD, self).__init__(params, defaults)
+        super(ExpGD, self).__init__(params, defaults)
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -141,7 +141,17 @@ class LogisticModel(nn.Module):
 # Ensembling quantile model
 class EnsemblingModel(nn.Module):
     def __init__(self, init_weights):
+        super(EnsemblingModel, self).__init__()
         self.weights = nn.Parameter(init_weights)
 
     def forward(self, predictors):
         return self.weights @ predictors
+
+# Quantile tracker
+class QuantileTracker(nn.Module):
+    def __init__(self, init_q):
+        super(QuantileTracker, self).__init__()
+        self.q = nn.Parameter(torch.tensor(init_q))
+
+    def forward(self):
+        return self.q
