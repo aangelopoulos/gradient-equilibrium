@@ -12,3 +12,4 @@ pandas
 seaborn
 matplotlib
 accelerate
+jupyterlab
