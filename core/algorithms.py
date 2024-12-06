@@ -59,7 +59,7 @@ class GD(torch.optim.Optimizer):
     
 # Define the gradient descent optimizer
 class ExpGD(torch.optim.Optimizer):
-    def __init__(self, params, lr=1e-3, penalty_type=None, lambda_=0.0, alpha=0):
+    def __init__(self, params, lr=1e-3, penalty_type=None, lambda_=0.0, alpha=0, norm=True):
         if lr < 0.0:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if penalty_type not in (None, 'L1', 'L2'):
@@ -71,7 +71,7 @@ class ExpGD(torch.optim.Optimizer):
 
         # Store initial learning rate separately to apply decay formula
         self.global_step = 0
-        defaults = dict(lr=lr, initial_lr=lr, penalty_type=penalty_type, lambda_=lambda_, alpha=alpha)
+        defaults = dict(lr=lr, initial_lr=lr, penalty_type=penalty_type, lambda_=lambda_, alpha=alpha, norm=norm)
         super(ExpGD, self).__init__(params, defaults)
 
     @torch.no_grad()
@@ -102,9 +102,9 @@ class ExpGD(torch.optim.Optimizer):
                     d_p = d_p + group['lambda_'] * p.data
                 elif group['penalty_type'] == 'L1':
                     d_p = d_p + group['lambda_'] * p.data.sign()
-
                 p.data *= torch.exp(-group['lr'] * d_p)
-                p.data /= p.data.sum()
+                if group['norm']:
+                    p.data /= p.data.sum()
 
         return loss
 
