@@ -17,7 +17,7 @@ python setup.py
 
 The core algorithms are in `core/algorithms.py`. The file is short and should be easy to parse.
 
-All other folders are dedicated to experiments. The most important files in each folder are a set of Jupyter notebooks in the root directory, each of which is dedicated to a separate experiment (they are largely self-explanatory). Each folder also contains a `raw_data` folder containing the raw data (after running `setup.py`, and exclusing `helpsteer/` which handles data management through Huggingface `datasets`). Finally, the folders include a `plots` folder for saved PDF files of plots. 
+All other folders are dedicated to experiments. The most important files in each folder are a set of Jupyter notebooks in the root directory, each of which is dedicated to a separate experiment (they are largely self-explanatory). Each folder includes also a `plots` folder for saved PDF files of plots. 
 
 `arena/` reproduces the Chatbot Arena experiments. The notebooks can be run in any order.
 
