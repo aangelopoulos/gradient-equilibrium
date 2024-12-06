@@ -1,9 +1,0 @@
-defaults:
-  - _self_
-
-dataset:
-  size: 10000
-  distribution_shift_speed: 0.0
-  d: 3
-  trend_type: "linear"
-

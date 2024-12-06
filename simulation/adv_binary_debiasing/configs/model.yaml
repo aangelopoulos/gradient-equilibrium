@@ -1,6 +1,0 @@
-defaults:
-  - _self_
-
-model:
-  theta0: [1., 1.]  # Default model parameters
-

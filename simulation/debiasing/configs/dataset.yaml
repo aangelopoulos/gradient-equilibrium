@@ -1,8 +1,0 @@
-defaults:
-  - _self_
-
-dataset:
-  size: 2000
-  d: 2
-  trend_amplitude: 5
-  trend_period: 1000

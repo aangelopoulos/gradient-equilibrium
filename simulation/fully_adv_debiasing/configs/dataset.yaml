@@ -1,8 +1,0 @@
-defaults:
-  - _self_
-
-dataset:
-  size: 2000
-  d: 3 
-  By: 1
-  Bg: 1

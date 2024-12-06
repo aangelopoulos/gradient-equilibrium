@@ -1,8 +1,5 @@
-from collections import defaultdict
-import json, math, gdown
 import numpy as np
 import pandas as pd
-import plotly.express as px
 from tqdm import tqdm
 import os
 import requests
