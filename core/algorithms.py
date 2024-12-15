@@ -149,3 +149,39 @@ class QuantileTracker(nn.Module):
 
     def forward(self):
         return self.q
+    
+# Not-quite calibration model
+class NotQuiteCalibrationModel(nn.Module):
+    def __init__(self, bin_values, init_theta):
+        super(NotQuiteCalibrationModel, self).__init__()
+        self.bin_values = torch.tensor(bin_values)
+        self.theta = nn.Parameter(torch.tensor(init_theta))
+
+    def forward(self, prediction):
+        i_t = torch.argmin((self.bin_values - prediction).abs())
+        binned_prediction = self.bin_values[i_t]
+        adjusted_prediction = binned_prediction + self.theta[i_t]
+        return adjusted_prediction
+    
+
+# Calibration model
+class CalibrationModel(nn.Module):
+    def __init__(self, bin_values, init_theta, lr):
+        super(CalibrationModel, self).__init__()
+        self.bin_values = torch.tensor(bin_values)
+        self.theta = torch.tensor(init_theta)
+        self.lr = lr
+
+    def forward(self, prediction, return_i_t=False):
+        j_t = torch.argmin((self.bin_values - prediction).abs())
+        binned_prediction = self.bin_values[j_t]
+        adjusted_prediction = binned_prediction + self.theta[j_t]
+        i_t = torch.argmin((self.bin_values - adjusted_prediction).abs())
+        if return_i_t:
+            return adjusted_prediction, i_t
+        else:
+            return adjusted_prediction
+        
+    def update(self, prediction, y_t):
+        adjusted_prediction, i_t = self.forward(prediction, return_i_t=True)
+        self.theta[i_t] += self.lr*(y_t-adjusted_prediction)
