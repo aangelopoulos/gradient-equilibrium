@@ -158,9 +158,9 @@ class NotQuiteCalibrationModel(nn.Module):
         self.theta = nn.Parameter(torch.tensor(init_theta))
 
     def forward(self, prediction):
-        i_t = torch.argmin((self.bin_values - prediction).abs())
-        binned_prediction = self.bin_values[i_t]
-        adjusted_prediction = binned_prediction + self.theta[i_t]
+        i_t = torch.bucketize(prediction, self.bin_values)
+        binned_prediction = self.bin_values[min(i_t, len(self.bin_values)-1)]
+        adjusted_prediction = binned_prediction + self.theta[min(i_t, len(self.bin_values)-1)]
         return adjusted_prediction
     
 
@@ -173,10 +173,11 @@ class CalibrationModel(nn.Module):
         self.lr = lr
 
     def forward(self, prediction, return_i_t=False):
-        j_t = torch.argmin((self.bin_values - prediction).abs())
-        binned_prediction = self.bin_values[j_t]
+        j_t = torch.bucketize(prediction, self.bin_values)
+        binned_prediction = self.bin_values[min(j_t, len(self.bin_values)-1)]
         adjusted_prediction = binned_prediction + self.theta[j_t]
-        i_t = torch.argmin((self.bin_values - adjusted_prediction).abs())
+        i_t = torch.bucketize(adjusted_prediction, self.bin_values)
+        adjusted_prediction = self.bin_values[min(i_t,len(self.bin_values)-1)]
         if return_i_t:
             return adjusted_prediction, i_t
         else:
@@ -184,4 +185,4 @@ class CalibrationModel(nn.Module):
         
     def update(self, prediction, y_t):
         adjusted_prediction, i_t = self.forward(prediction, return_i_t=True)
-        self.theta[i_t] += self.lr*(y_t-adjusted_prediction)
+        self.theta[min(i_t, len(self.bin_values)-1)] += self.lr*(y_t-adjusted_prediction)
