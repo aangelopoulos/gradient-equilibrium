@@ -186,3 +186,28 @@ class CalibrationModel(nn.Module):
     def update(self, prediction, y_t):
         adjusted_prediction, i_t = self.forward(prediction, return_i_t=True)
         self.theta[min(i_t, len(self.bin_values)-1)] += self.lr*(y_t-adjusted_prediction)
+
+# Block calibration model
+class BlockCalibrationModel(nn.Module):
+    def __init__(self, bin_values, init_theta, lr):
+        super(BlockCalibrationModel, self).__init__()
+        self.bin_values = torch.tensor(bin_values)
+        self.theta = torch.tensor(init_theta)
+        self.lr = lr
+
+    def forward(self, prediction, return_i_t_j_t=False):
+        j_t = torch.bucketize(prediction, self.bin_values)
+        binned_prediction = self.bin_values[min(j_t, len(self.bin_values)-1)]
+        adjusted_prediction = binned_prediction + self.theta[j_t]
+        i_t = torch.bucketize(adjusted_prediction, self.bin_values)
+        adjusted_prediction = self.bin_values[min(i_t,len(self.bin_values)-1)]
+        if return_i_t_j_t:
+            return adjusted_prediction, i_t, j_t
+        else:
+            return adjusted_prediction
+        
+    def update(self, prediction, y_t):
+        adjusted_prediction, i_t, j_t = self.forward(prediction, return_i_t_j_t=True)
+        min_index = min(i_t, j_t,  len(self.bin_values)-1)
+        max_index = max(i_t, j_t)
+        self.theta[min_index:max_index+1] += self.lr*(y_t-adjusted_prediction)
