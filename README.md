@@ -15,7 +15,7 @@ python setup.py
 
 ## Repository Structure
 
-The core algorithms are in `core/algorithms.py`. The file is short and should be easy to parse.
+The core algorithms, including gradient and mirror descent and the model debiasing wrappers, are in `core/algorithms.py`. The file is short and should be easy to parse.
 
 All other folders are dedicated to experiments. The most important files in each folder are a set of Jupyter notebooks in the root directory, each of which is dedicated to a separate experiment (they are largely self-explanatory). Each folder includes also a `plots` folder for saved PDF files of plots. 
 
