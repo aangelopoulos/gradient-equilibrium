@@ -1,5 +1,5 @@
-# Gradient Equilibrium
-### Anastasios N. Angelopoulos, Ryan J. Tibshirani, and Michael I. Jordan
+# Gradient Equilibrium in Online Learning: Theory and Applications
+### Anastasios N. Angelopoulos, Michael I. Jordan, and Ryan J. Tibshirani
 
 This repository includes code for reproducing our experiments.
 
