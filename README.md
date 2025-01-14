@@ -1,6 +1,7 @@
 # Gradient Equilibrium in Online Learning
 ## Theory and Applications
 ### Anastasios N. Angelopoulos, Michael I. Jordan, and Ryan J. Tibshirani
+[![arXiv](https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg?style=for-the-badge)](https://arxiv.org/abs/1234.56789)
 
 This repository includes code for reproducing our experiments.
 
