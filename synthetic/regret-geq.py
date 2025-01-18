@@ -76,6 +76,7 @@ plt.figure()
 plt.plot(x, np.abs(x), color='black')
 plt.plot(xx, yy, color='gray', zorder=1)
 plt.scatter(theta, np.abs(theta), color='#EBB901', zorder=2)
+
 # Style the plot
 plt.gca().spines['left'].set_color('gray')
 plt.gca().spines['left'].set_position('center')

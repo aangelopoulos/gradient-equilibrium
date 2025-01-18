@@ -1,5 +1,6 @@
-# Gradient Equilibrium
-### Anastasios N. Angelopoulos, Ryan J. Tibshirani, and Michael I. Jordan
+# Gradient Equilibrium in Online Learning: Theory and Applications
+### Anastasios N. Angelopoulos, Michael I. Jordan, and Ryan J. Tibshirani
+[![arXiv](https://img.shields.io/badge/arXiv-2501.08330-b31b1b.svg?style=for-the-badge)](https://arxiv.org/abs/2501.08330)
 
 This repository includes code for reproducing our experiments.
 
@@ -15,7 +16,7 @@ python setup.py
 
 ## Repository Structure
 
-The core algorithms are in `core/algorithms.py`. The file is short and should be easy to parse.
+The core algorithms, including gradient descent, mirror descent, and the model debiasing wrappers, are in `core/algorithms.py`. The file is short and should be easy to parse.
 
 All other folders are dedicated to experiments. The most important files in each folder are a set of Jupyter notebooks in the root directory, each of which is dedicated to a separate experiment (they are largely self-explanatory). Each folder includes also a `plots` folder for saved PDF files of plots. 
 
@@ -25,6 +26,6 @@ All other folders are dedicated to experiments. The most important files in each
 
 `helpsteer/` reproduces the HelpSteer2 experiments. From this directory, you can run `debias.ipynb` to reproduce our plots immediately, or `python train_and_generate_rewards.py` to reproduce the reward model training.
 
-`mimic_stay` reproduces the MIMIC-IV length-of-stay experiments. This dataset cannot be fully open-sourced due to patient confidentiality issues. The dataset is available at [this link](https://physionet.org/content/mimiciv/3.1/). To reproduce the MIMIC IV predictions, perform the required trainings and then download the files {`admissions.csv`, `diagnoses_icd.csv`, `patients.csv`, `procedures_icd.csv`} into the folder `mimic_stay/raw_data`. Then run `cache_model.py`. Thereafter, run any of the notebooks to reproduce the experiments.
+`mimic_stay/` reproduces the MIMIC-IV length-of-stay experiments. This dataset cannot be fully open-sourced due to patient confidentiality issues. The dataset is available at [this link](https://physionet.org/content/mimiciv/3.1/). To reproduce the MIMIC IV predictions, perform the required trainings and then download the files {`admissions.csv`, `diagnoses_icd.csv`, `patients.csv`, `procedures_icd.csv`} into the folder `mimic_stay/raw_data`. Then run `cache_model.py`. Thereafter, run any of the notebooks to reproduce the experiments.
 
 `simulation/` reproduces experiments on simulated data.
