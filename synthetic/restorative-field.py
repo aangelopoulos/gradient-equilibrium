@@ -8,21 +8,15 @@ sns.set_style("white")
 # Create a figure
 plt.figure(figsize=(10, 10))
 
-# Style the plot
-plt.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
-plt.axvline(x=0, color='gray', linestyle='-', alpha=0.3)
-
 # Create grid points
-x = np.linspace(-4, 4, 15)
-y = np.linspace(-4, 4, 15)
+x = np.linspace(-4, 4, 20)
+y = np.linspace(-4, 4, 20)
 X, Y = np.meshgrid(x, y)
 
 # Calculate radius at each point
-R = np.clip(np.sqrt(X**2 + Y**2), 0.01, None)
+R = np.sqrt(X**2 + Y**2)
 
-# Set the angle phi for the spiral (in radians)
-phi = np.pi/2-np.pi/12
-
+# Define horizon
 h = 2
 
 # Calculate field components
@@ -31,6 +25,7 @@ h = 2
 U = np.where(R > h+0.3, -X/R, 0)
 V = np.where(R > h+0.3, -Y/R, 0)
 
+# Plot the field lines
 idx_nonzero = (np.abs(U) > 0) & (np.abs(V) > 0)
 X = X[idx_nonzero]
 Y = Y[idx_nonzero]
@@ -55,18 +50,19 @@ plt.xlim(-3.5, 3.5)
 plt.ylim(-3.5, 3.5)
 plt.gca().set_aspect('equal')
 
-# Remove spines and ticks
+# Style the axes
 sns.despine(top=True, right=True, left=True, bottom=True)
 plt.gca().set_xticks([])
+plt.gca().set_xticklabels([])
 plt.gca().set_yticks([])
+plt.gca().set_yticklabels([])
 
 # Add text label for horizon
 plt.text(h-1.05, 0.23, 'h', fontsize=18, color="gray")
 plt.text(0.1, -0.3, r'$0$', fontsize=18)
 plt.plot([0,h*np.cos(np.pi/6)],[0,h*np.sin(np.pi/6)], color='gray', linestyle='dotted')
 
-# Add origin marker and label
+# Plot marker at origin
 plt.plot(0, 0, 'ko', markersize=4)
-plt.text(0.1, -0.3, r'$0$', fontsize=18)
 
 plt.savefig('figures/restorative-field.pdf', bbox_inches='tight')
