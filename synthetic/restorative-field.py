@@ -22,8 +22,8 @@ h = 2
 # Calculate field components
 # Inside horizon: zero field
 # Outside horizon: point inward with magnitude 1/r
-U = np.where(R > h+0.4, -X/R, 0)
-V = np.where(R > h+0.4, -Y/R, 0)
+U = np.where(R > h+0.3, -X/R, 0)
+V = np.where(R > h+0.3, -Y/R, 0)
 
 # Plot the field lines
 idx_nonzero = (np.abs(U) > 0) & (np.abs(V) > 0)
