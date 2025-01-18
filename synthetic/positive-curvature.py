@@ -8,6 +8,9 @@ sns.set_style("white")
 # Create a figure
 plt.figure(figsize=(10, 10))
 
+plt.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
+plt.axvline(x=0, color='gray', linestyle='-', alpha=0.3)
+
 # Create grid points
 x = np.linspace(-4, 4, 15)
 y = np.linspace(-4, 4, 15)
@@ -56,8 +59,6 @@ plt.plot(trajectory[:, 0], trajectory[:, 1], color='#EBB901', linewidth=2.5,
 plt.plot(x0, y0, 'o', markeredgecolor='#EBB901', markerfacecolor='#EBB901', markersize=12)
 
 # Style the plot
-plt.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
-plt.axvline(x=0, color='gray', linestyle='-', alpha=0.3)
 plt.xlim(-3.5, 3.5)
 plt.ylim(-3.5, 3.5)
 plt.gca().set_aspect('equal')
