@@ -22,8 +22,8 @@ h = 2
 # Calculate field components
 # Inside horizon: zero field
 # Outside horizon: point inward with magnitude 1/r
-U = np.where(R > h, -X/R, 0)
-V = np.where(R > h, -Y/R, 0)
+U = np.where(R > h+0.4, -X/R, 0)
+V = np.where(R > h+0.4, -Y/R, 0)
 
 # Plot the field lines
 idx_nonzero = (np.abs(U) > 0) & (np.abs(V) > 0)
@@ -36,16 +36,14 @@ V = V[idx_nonzero]
 plt.axhline(y=0, color='gray', linestyle='-', alpha=0.3)
 plt.axvline(x=0, color='gray', linestyle='-', alpha=0.3)
 
-
 # Plot horizon circle and quivers
-theta = np.linspace(0, 2*np.pi, 97)
+theta = np.linspace(0, h*np.pi, 97)
 theta_arrows = theta[::3]
 theta2_arrows = theta[::2]
-plt.quiver(h*np.cos(theta_arrows), h*np.sin(theta_arrows), -np.cos(theta_arrows), -np.sin(theta_arrows), scale=20, width=0.0027, color='#EBB901', headaxislength=5, headwidth=4, pivot='tip')
-plt.quiver(1.3*h*np.cos(theta2_arrows), 1.3*h*np.sin(theta2_arrows), -np.cos(theta2_arrows), -np.sin(theta2_arrows), scale=20, width=0.0027, color='#EBB901', headaxislength=5, headwidth=4, pivot='tip')
+# plt.quiver(h*np.cos(theta_arrows), h*np.sin(theta_arrows), -np.cos(theta_arrows), -np.sin(theta_arrows), scale=20, width=0.0027, color='#EBB901', headaxislength=5, headwidth=4, pivot='tip')
+# plt.quiver(1.3*h*np.cos(theta2_arrows), 1.3*h*np.sin(theta2_arrows), -np.cos(theta2_arrows), -np.sin(theta2_arrows), scale=20, width=0.0027, color='#EBB901', headaxislength=5, headwidth=4, pivot='tip')
+plt.quiver(X, Y, U, V, scale=20, width=0.0027, color='#EBB901', headaxislength=5, headwidth=4, pivot='tail')
 plt.plot(h*np.cos(theta), h*np.sin(theta), 'k', linewidth=1.5, linestyle='dotted')
-
-
 
 # Set limits and aspect ratio
 plt.xlim(-3.5, 3.5)

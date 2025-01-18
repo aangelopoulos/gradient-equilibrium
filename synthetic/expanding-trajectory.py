@@ -21,8 +21,7 @@ U = np.where(R > 0.2, -Y/R, 0)
 V = np.where(R > 0.2, X/R, 0)
 
 # Plot the vector field
-plt.quiver(X, Y, U, V, scale=20, width=0.0027, color='#CCCCCC', 
-          headaxislength=5, headwidth=4, pivot='tip')
+plt.quiver(X, Y, U, V, scale=20, width=0.0027, color='#CCCCCC', headaxislength=5, headwidth=4, pivot='tail')
 
 # Calculate trajectory
 def get_field_at_point(x, y):

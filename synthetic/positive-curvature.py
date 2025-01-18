@@ -25,8 +25,7 @@ U = np.where(R > 0.2, (-X/R * np.cos(phi) - Y/R * np.sin(phi)), 0)
 V = np.where(R > 0.2, (-Y/R * np.cos(phi) + X/R * np.sin(phi)), 0)
 
 # Plot the vector field
-plt.quiver(X, Y, U, V, scale=20, width=0.0027, color='#CCCCCC', 
-          headaxislength=5, headwidth=4, pivot='tip')
+plt.quiver(X, Y, U, V, scale=20, width=0.0027, color='#CCCCCC', headaxislength=5, headwidth=4, pivot='tail')
 
 # Update field calculation for trajectory
 def get_field_at_point(x, y):
