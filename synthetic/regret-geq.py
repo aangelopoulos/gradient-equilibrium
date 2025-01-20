@@ -75,7 +75,7 @@ for i in range(len(theta)-1):
 plt.figure()
 plt.plot(x, np.abs(x), color='black')
 plt.plot(xx, yy, color='gray', zorder=1)
-plt.scatter(theta, np.abs(theta), color='#EBB901', zorder=2)
+plt.scatter(theta, np.abs(theta), edgecolor='#EBB901', facecolor='#FED332B3', zorder=2)
 
 # Style the plot
 plt.gca().spines['left'].set_color('gray')
@@ -99,7 +99,7 @@ theta = -0.5*(-1)**np.arange(1, 11) - (-2/3)**np.arange(3, 13)
 plt.figure()
 plt.plot(x, np.abs(x), color='black')
 plt.plot(theta, np.abs(theta), color='gray', zorder=1)
-plt.scatter(theta, np.abs(theta), color='#EBB901', zorder=2)
+plt.scatter(theta, np.abs(theta), edgecolor='#EBB901', facecolor='#FED332B3', zorder=2)
 
 plt.gca().spines['left'].set_color('gray')
 plt.gca().spines['left'].set_position('center')
